@@ -1,6 +1,6 @@
 ---
 title: "Assignment 1: Reproducibility, Workflow, Version Control"
-author: "Student Name"
+author: "Xin Wang"
 output: pdf_document
 geometry: margin=2.54cm
 ---
@@ -30,22 +30,22 @@ The completed exercise is due on Thursday, 17 January, 2018 before class begins.
 ### Question
 Why are reproducible practices becoming the norm in data analytics?
 
-> Answer: 
+> Answer: Someone else or future self may view the data work some time. Reproducible work can help to recall and make clear the context, data information, analysis processing and results. If they want, data analytics work can be done again at any time. This is efficient and effectively avoids confusion.
 
 ### Question
 What are your previous experiences with data analytics, R, and Git? Include both formal and informal training.
 
-> Answer: 
+> Answer: During undergrad I took a course called "Quantitative Methods in Ecology", where I was trained the basic operations in R. I also had some experience in R, using certain packages for ecological research purpose (e.g. community indices calculation). That's all.
 
 ### Question
 Are there any components of the course about which you feel confident?
 
-> Answer: 
+> Answer: I feel confident about nothing but Kateri. I believe her course must be of high quality.
 
 ### Question
 Are there any components of the course about which you feel apprehensive?
 
-> Answer: 
+> Answer: I would say no, or all of them. They are the same. 
 
 
 ## 2) GitHub
@@ -53,6 +53,6 @@ Are there any components of the course about which you feel apprehensive?
 ### Your Repository
 Provide a link below to your course repository in GitHub. Make sure you have pulled all recent changes from the course repository (https://github.com/KateriSalk/Environmental_Data_Analytics) and that you have updated your course README file. 
 
-> Answer: 
+> Answer: https://github.com/nataliadxx/Environmental_Data_Analytics
 
 
