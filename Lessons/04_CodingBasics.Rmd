@@ -62,7 +62,7 @@ matrix4 <- matrix(cells, nrow = 2, ncol = 2, byrow = TRUE,
 matrix4
 
 # Lists ---- 
-list1 <- list(name = "Fred", mynumbers = vector1, mymatrix = matrix1, age = 5.3); list1
+list1 <- list(name = "Maria", mynumbers = vector1, mymatrix = matrix1, age = 5.3); list1
 list1[[2]]
 
 # Data Frames ----
@@ -91,7 +91,7 @@ QUESTION: What happens when a comment in R is followed by "----"?
 
 Advanced: Sequential section headers can be created by using at least four -, =, and # characters.
 
-## LIBRARIES
+## PACKAGES
 
 The Packages tab in the notebook stores the packages that you have saved in your system. A checkmark next to each package indicates whether the package has been loaded into your current R session. Given that R is an open source software, users can create packages that have specific functionalities, with complicated code "packaged" into a simple commands.
 
@@ -101,17 +101,20 @@ If you want to use a specific package that is not in your libaray already, you n
 
 2. Type `install.packages("packagename")` into your R chunk or console. It will then appear in your packages list. You only need to do this once. 
 
-If a library is already installed, you will need to load it every session. You can do this in two ways: 
+If a package is already installed, you will need to load it every session. You can do this in two ways: 
 
 1. Click the box next to the package name in the Packages tab. 
 
 2. Type `library(packagename)` into your R chunk or console.
+
+2a. The command `require(packagename)` will also load a package, but it will not give any error or warning messages if there is an issue.
 
 **Tips and troubleshooting**
 
 * You may be asked to restart R when installing or updating packages. Feel free to say no, as this will obviously slow your progress. However, if the functionality of your new package isn't working properly, try restarting R as a first step. 
 
 * If asked "Do you want to install from sources the packages which needs compilation?", type `yes` into the console. 
+
 * You should only install packages once on your machine. If you store `install.packages` in your R chunks/scripts, comment these lines out, as below. 
 
 * Update your packages regularly! 
@@ -135,7 +138,7 @@ What happens in the console when you load a package?
 
 ## FUNCTIONS
 
-You've had some practice with functions with the simple commands you've entered in this lesson and the one previous. the basic form of a function is `functionname()`, and the packages we will use in this class will use these basic forms. However, there may be situations when you will want to create your own function. Below is a description of how to write functions through the metaphor of creating a recipe. Credit for this goes to Isabella R. Ghement (@IsabellaGhement on Twitter). 
+You've had some practice with functions with the simple commands you've entered in this lesson and the one previous. The basic form of a function is `functionname()`, and the packages we will use in this class will use these basic forms. However, there may be situations when you will want to create your own function. Below is a description of how to write functions through the metaphor of creating a recipe. Credit for this goes to Isabella R. Ghement (@IsabellaGhement on Twitter). 
 
 Writing a function is like writing a recipe. Your function will need a recipe name (functionname). Your recipe ingredients will go inside the parentheses. The recipe steps and end product go inside the curly brackets.
 ```{r}
@@ -216,6 +219,6 @@ recipe6 <- function(x){
 }
 
 meal4 <- recipe6(4); meal4
-meal5 <- recipe6(2); meal4
+meal5 <- recipe6(2); meal5
 ```
 
