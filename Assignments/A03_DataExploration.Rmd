@@ -1,0 +1,115 @@
+---
+title: "Assignment 3: Data Exploration"
+author: "Student Name"
+output: pdf_document
+geometry: margin=2.54cm
+---
+
+## OVERVIEW
+
+This exercise accompanies the lessons in Environmental Data Analytics (ENV872L) on data exploration. 
+
+## Directions
+1. Change "Student Name" on line 3 (above) with your name.
+2. Use the lesson as a guide. It contains code that can be modified to complete the assignment.
+3. Work through the steps, **creating code and output** that fulfill each instruction.
+4. Be sure to **answer the questions** in this assignment document.
+Space for your answers is provided in this document and is indicated by the ">" character.
+If you need a second paragraph be sure to start the first line with ">".
+You should notice that the answer is highlighted in green by RStudio. 
+6. When you have completed the assignment, **Knit** the text and code into a single PDF file.
+You will need to have the correct software installed to do this (see Software Installation Guide)
+Press the `Knit` button in the RStudio scripting panel.
+This will save the PDF output in your Assignments folder.
+8. After Knitting, please submit the completed exercise (PDF file) to the dropbox in Sakai. Please add your last name into the file name (e.g., "Salk_A02_DataExploration.pdf") prior to submission.
+
+The completed exercise is due on Thursday, 31 January, 2019 before class begins.
+
+## 1) Set up your R session
+
+Check your working directory, load necessary packages (tidyverse), and upload the North Temperate Lakes long term monitoring dataset for the light, temperature, and oxygen data for three lakes (file name: NTL-LTER_Lake_ChemistryPhysics_Raw.csv). Type your code into the R chunk below.
+```{r}
+
+```
+
+## 2) Learn about your system
+
+Read about your dataset in the NTL-LTER README file. What are three salient pieces of information you gained from reading this file?
+
+> ANSWER: 
+
+## 3) Obtain basic summaries of your data
+
+Write R commands to display the following information: 
+
+1. dimensions of the dataset
+2. class of the dataset
+3. first 8 rows of the dataset
+4. class of the variables lakename, sampledate, depth, and temperature
+5. summary of lakename, depth, and temperature
+
+```{r}
+# 1
+
+# 2
+
+# 3
+
+# 4
+
+# 5
+
+```
+
+Change sampledate to class = date. After doing this, write an R command to display that the class of sammpledate is indeed date. Write another R command to show the first 10 rows of the date column. 
+
+```{r}
+
+```
+
+Question: Do you want to remove NAs from this dataset? Why or why not?
+
+> ANSWER: 
+
+
+## 4) Explore your data graphically
+
+Write R commands to display graphs depicting: 
+
+1. Bar chart of temperature counts for each lake
+2. Histogram of count distributions of temperature (all temp measurements together)
+3. Change histogram from 2 to have a different number or width of bins
+4. Frequency polygon of temperature for each lake. Choose different colors for each lake.
+5. Boxplot of temperature for each lake
+6. Boxplot of temperature based on depth, with depth divided into 0.25 m increments
+7. Scatterplot of temperature by depth
+
+```{r}
+# 1
+
+# 2
+
+# 3
+
+# 4
+
+# 5
+
+# 6
+
+# 7 
+
+```
+## 5) Form questions for further data analysis
+
+What did you find out about your data from the basic summaries and graphs you made? Describe in 4-6 sentences.
+
+> ANSWER: 
+
+What are 3 further questions you might ask as you move forward with  analysis of this dataset?
+
+> ANSWER 1: 
+
+> ANSWER 2: 
+
+> ANSWER 3: 
