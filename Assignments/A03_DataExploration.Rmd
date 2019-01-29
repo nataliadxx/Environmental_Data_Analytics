@@ -1,6 +1,6 @@
 ---
 title: "Assignment 3: Data Exploration"
-author: "Student Name"
+author: "Xin Wang"
 output: pdf_document
 geometry: margin=2.54cm
 ---
@@ -29,14 +29,16 @@ The completed exercise is due on Thursday, 31 January, 2019 before class begins.
 
 Check your working directory, load necessary packages (tidyverse), and upload the North Temperate Lakes long term monitoring dataset for the light, temperature, and oxygen data for three lakes (file name: NTL-LTER_Lake_ChemistryPhysics_Raw.csv). Type your code into the R chunk below.
 ```{r}
-
+getwd()
+library(tidyverse)
+NTL.dat <- read.csv(file.choose())
 ```
 
 ## 2) Learn about your system
 
 Read about your dataset in the NTL-LTER README file. What are three salient pieces of information you gained from reading this file?
 
-> ANSWER: 
+> ANSWER: The source of the data (LTER project), the time span (1984-2016) and collection methodology (location, time, sampling method, etc.).
 
 ## 3) Obtain basic summaries of your data
 
