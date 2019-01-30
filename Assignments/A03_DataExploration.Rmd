@@ -1,7 +1,9 @@
 ---
 title: "Assignment 3: Data Exploration"
 author: "Xin Wang"
-output: pdf_document
+output: 
+  pdf_document: 
+    latex_engine: xelatex
 geometry: margin=2.54cm
 ---
 
