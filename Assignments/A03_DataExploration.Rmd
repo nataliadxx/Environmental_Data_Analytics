@@ -31,14 +31,14 @@ Check your working directory, load necessary packages (tidyverse), and upload th
 ```{r}
 getwd()
 library(tidyverse)
-NTL.dat <- read.csv(file.choose())
+NTL.dat <- read.csv("../Data/Raw/NTL-LTER_Lake_ChemistryPhysics_Raw.csv")
 ```
 
 ## 2) Learn about your system
 
 Read about your dataset in the NTL-LTER README file. What are three salient pieces of information you gained from reading this file?
 
-> ANSWER: The source of the data (LTER project), the time span (1984-2016) and collection methodology (location, time, sampling method, etc.).
+> ANSWER: The source of the data (LTER project), its time span (1984-2016) and collection methodology (location, time, sampling method, etc.).
 
 ## 3) Obtain basic summaries of your data
 
@@ -52,26 +52,35 @@ Write R commands to display the following information:
 
 ```{r}
 # 1
-
+dim(NTL.dat)
 # 2
-
+class(NTL.dat)
 # 3
-
+head(NTL.dat,8)
 # 4
-
+attach(NTL.dat)
+class(lakename)
+class(sampledate)
+class(depth)
+class(temperature_C)
 # 5
-
+summary(lakename)
+summary(depth)
+summary(temperature_C)
+detach(NTL.dat)
 ```
 
 Change sampledate to class = date. After doing this, write an R command to display that the class of sammpledate is indeed date. Write another R command to show the first 10 rows of the date column. 
 
 ```{r}
-
+NTL.dat$sampledate <- as.Date(NTL.dat$sampledate,format = "%m/%d/%y")
+class(NTL.dat$sampledate)
+head(NTL.dat$sampledate,10)
 ```
 
 Question: Do you want to remove NAs from this dataset? Why or why not?
 
-> ANSWER: 
+> ANSWER: No, because each row represents the measurement at a unique depth for a certain lake on a certain day. There's no repititions, so each row matters, even if it has NAs.
 
 
 ## 4) Explore your data graphically
@@ -88,30 +97,39 @@ Write R commands to display graphs depicting:
 
 ```{r}
 # 1
-
+attach(NTL.dat)
+ggplot(NTL.dat,aes(x = lakeid)) +
+  geom_bar()
 # 2
-
+ggplot(NTL.dat) +
+  geom_histogram(aes(x = temperature_C))
 # 3
-
+ggplot(NTL.dat) +
+  geom_histogram(aes(x = temperature_C)，binwidth = 0.5)
 # 4
-
+ggplot(NTL.dat) +
+  geom_freqpoly(aes(x = temperature_C, color = lakeid))
 # 5
-
+ggplot(NTL.dat) +
+  geom_boxplot(aes(x = lakeid,y = temperature_C))
 # 6
-
+ggplot(NTL.dat) +
+  geom_boxplot(aes(x = depth, y = temperature_C, group = cut_width(depth, 0.25)))
 # 7 
-
+ggplot(NTL.dat) +
+  geom_point(aes(x = depth, y = temperature_C))
+detach(NTL.dat)
 ```
 ## 5) Form questions for further data analysis
 
 What did you find out about your data from the basic summaries and graphs you made? Describe in 4-6 sentences.
 
-> ANSWER: 
+> ANSWER: There are totally 9 lakes investigated for the project, with Paul Lake and Peter Lake the most samples. Sampling depth ranges from 0 to 20m, but most samples are collected in water shallower than 10m. The frequency distribution of temperature among the samples has two peaks, one around 5 degree celcius and the other around 22 degree celcius. Generally, water temperature decreases as depth increases, but remains steady in water deeper than 10m.
 
 What are 3 further questions you might ask as you move forward with  analysis of this dataset?
 
-> ANSWER 1: 
+> ANSWER 1: How does dissolved oxygen change with depth?
 
-> ANSWER 2: 
+> ANSWER 2: For the physical and chemical variables, is there significant difference among different lakes?
 
-> ANSWER 3: 
+> ANSWER 3: How do the physical and chemical variables of the lakes change with time?
