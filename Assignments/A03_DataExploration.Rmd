@@ -100,7 +100,8 @@ Write R commands to display graphs depicting:
 ```{r}
 # 1
 attach(NTL.dat)
-ggplot(NTL.dat,aes(x = lakeid)) +
+temp <- NTL.dat[-which(is.na(temperature_C)),] # generate a dataset with no NAs in the temperature column
+ggplot(temp,aes(x = lakeid)) +
   geom_bar()
 # 2
 ggplot(NTL.dat) +
