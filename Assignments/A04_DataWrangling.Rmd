@@ -1,0 +1,96 @@
+---
+title: "Assignment 4: Data Wrangling"
+author: "Student Name"
+output: pdf_document
+geometry: margin=2.54cm
+editor_options: 
+  chunk_output_type: console
+---
+
+## OVERVIEW
+
+This exercise accompanies the lessons in Environmental Data Analytics (ENV872L) on data wrangling. 
+
+## Directions
+1. Change "Student Name" on line 3 (above) with your name.
+2. Use the lesson as a guide. It contains code that can be modified to complete the assignment.
+3. Work through the steps, **creating code and output** that fulfill each instruction.
+4. Be sure to **answer the questions** in this assignment document.
+Space for your answers is provided in this document and is indicated by the ">" character.
+If you need a second paragraph be sure to start the first line with ">".
+You should notice that the answer is highlighted in green by RStudio. 
+6. When you have completed the assignment, **Knit** the text and code into a single PDF file.
+You will need to have the correct software installed to do this (see Software Installation Guide)
+Press the `Knit` button in the RStudio scripting panel.
+This will save the PDF output in your Assignments folder.
+8. After Knitting, please submit the completed exercise (PDF file) to the dropbox in Sakai. Please add your last name into the file name (e.g., "Salk_A04_DataWrangling.pdf") prior to submission.
+
+The completed exercise is due on Thursday, 7 February, 2019 before class begins.
+
+## Set up your session 
+1. Check your working directory, load the `tidyverse` package, and upload all four raw data files associated with the EPA Air dataset. See the README file for the EPA air datasets for more information (especially if you have not worked with air quality data previously). 
+
+2. Generate a few lines of code to get to know your datasets (basic data summaries, etc.).
+
+```{r}
+#1
+
+#2
+```
+
+## Wrangle individual datasets to create processed files.
+3. Change date to date
+4. Select the following columns: Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, COUNTY, SITE_LATITUDE, SITE_LONGITUDE
+5. For the PM2.5 datasets, fill all cells in AQS_PARAMETER_DESC with "PM2.5" (all cells in this column should be identical).
+6. Save all four processed datasets in the Processed folder.
+
+```{r}
+#3
+
+#4
+
+#5
+
+#6
+
+```
+
+
+## Combine datasets
+7. Combine the four datasets with `rbind`. Make sure your column names are identical prior to running this code. 
+8. Wrangle your new dataset with a pipe function (%>%) so that it fills the following conditions: 
+
+* Sites: Blackstone, Bryson City, Castle Hayne, Leggett, Triple Oak
+* Add columns for "Month" and "Year" by parsing your "Date" column (hint: `separate` function or `lubridate` package)
+
+9. Spread your datasets such that AQI values for ozone and PM2.5 are in separate columns. Each location on a specific date should now occupy only one row.
+10. Call up the dimensions of your new tidy dataset.
+11. Save your processed dataset with the following file name: "EPAair_O3_PM25_NC1718_Processed.csv"
+
+```{r}
+#8
+
+#9
+
+#10
+
+#11
+
+```
+
+
+## Generate summary tables
+12. Use the split-apply-combine strategy to generate two new data frames: 
+a. A summary table of mean AQI values for O3 and PM2.5 by month
+b. A summary table of the mean, minimum, and maximum concentrations of O3 and PM2.5 for each site
+13. Display the data frames.
+
+```{r}
+#12a
+
+#12b
+
+#13
+
+```
+
