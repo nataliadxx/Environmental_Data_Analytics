@@ -1,6 +1,6 @@
 ---
 title: "Assignment 4: Data Wrangling"
-author: "Student Name"
+author: "Xin Wang"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
@@ -34,8 +34,19 @@ The completed exercise is due on Thursday, 7 February, 2019 before class begins.
 
 ```{r}
 #1
-
+getwd()
+library(tidyverse)
+o3_17 <- read.csv("./Data/Raw/EPAair_O3_NC2017_raw.csv")
+o3_18 <- read.csv("./Data/Raw/EPAair_O3_NC2018_raw.csv")
+pm25_17 <- read.csv("./Data/Raw/EPAair_PM25_NC2017_raw.csv")
+pm25_18 <- read.csv("./Data/Raw/EPAair_PM25_NC2018_raw.csv")
 #2
+head(o3_18)
+head(pm25_18)
+summary(o3_17$DAILY_AQI_VALUE)
+summary(pm25_18$Daily.Mean.PM2.5.Concentration)
+summary(o3_18$Site.Name)
+class(pm25_17$Date)
 ```
 
 ## Wrangle individual datasets to create processed files.
@@ -46,13 +57,23 @@ The completed exercise is due on Thursday, 7 February, 2019 before class begins.
 
 ```{r}
 #3
-
+o3_17$Date <- as.Date(o3_17$Date,format="%m/%d/%y")
+o3_18$Date <- as.Date(o3_18$Date,format="%m/%d/%y")
+pm25_17$Date <- as.Date(pm25_17$Date,format="%m/%d/%y")
+pm25_18$Date <- as.Date(pm25_18$Date,format="%m/%d/%y")
 #4
-
+o317skinny <- select(o3_17,Date,DAILY_AQI_VALUE,Site.Name,AQS_PARAMETER_DESC,COUNTY,SITE_LATITUDE,SITE_LONGITUDE)
+o318skinny <- select(o3_18,Date,DAILY_AQI_VALUE,Site.Name,AQS_PARAMETER_DESC,COUNTY,SITE_LATITUDE,SITE_LONGITUDE)
+pm2517skinny <- select(pm25_17,Date,DAILY_AQI_VALUE,Site.Name,AQS_PARAMETER_DESC,COUNTY,SITE_LATITUDE,SITE_LONGITUDE)
+pm2518skinny <- select(pm25_18,Date,DAILY_AQI_VALUE,Site.Name,AQS_PARAMETER_DESC,COUNTY,SITE_LATITUDE,SITE_LONGITUDE)
 #5
-
+pm2517skinny$AQS_PARAMETER_DESC <- "PM2.5"
+pm2518skinny$AQS_PARAMETER_DESC <- "PM2.5"
 #6
-
+write.csv(o317skinny,file = "./Data/Processed/EPAair_O3_NC2017_processed.csv",row.names = F)
+write.csv(o318skinny,file = "./Data/Processed/EPAair_O3_NC2018_processed.csv",row.names = F)
+write.csv(pm2517skinny,file = "./Data/Processed/EPAair_PM25_NC2017_processed.csv",row.names = F)
+write.csv(pm2518skinny,file = "./Data/Processed/EPAair_PM25_NC2018_processed.csv",row.names = F)
 ```
 
 
@@ -60,7 +81,7 @@ The completed exercise is due on Thursday, 7 February, 2019 before class begins.
 7. Combine the four datasets with `rbind`. Make sure your column names are identical prior to running this code. 
 8. Wrangle your new dataset with a pipe function (%>%) so that it fills the following conditions: 
 
-* Sites: Blackstone, Bryson City, Castle Hayne, Leggett, Triple Oak
+* Sites: Blackstone, Bryson City, Triple Oak
 * Add columns for "Month" and "Year" by parsing your "Date" column (hint: `separate` function or `lubridate` package)
 
 9. Spread your datasets such that AQI values for ozone and PM2.5 are in separate columns. Each location on a specific date should now occupy only one row.
@@ -69,28 +90,42 @@ The completed exercise is due on Thursday, 7 February, 2019 before class begins.
 
 ```{r}
 #8
-
+airdat <- rbind(o317skinny,o318skinny,pm2517skinny,pm2518skinny)
 #9
-
+library(lubridate)
+airdat.processed <- 
+  airdat %>%
+  filter(Site.Name %in% c("Blackstone","Bryson City","Triple Oak")) %>%
+  mutate(Month = month(Date)) %>%
+  mutate(Year = year(Date))
 #10
-
+airdat.processed2 <- spread(airdat.processed,AQS_PARAMETER_DESC,DAILY_AQI_VALUE)
 #11
-
+write.csv(airdat.processed2,file = "./Data/Processed/EPAair_O3_PM25_NC1718_Processed.csv",row.names = F)
 ```
 
 
 ## Generate summary tables
 12. Use the split-apply-combine strategy to generate two new data frames: 
 a. A summary table of mean AQI values for O3 and PM2.5 by month
-b. A summary table of the mean, minimum, and maximum concentrations of O3 and PM2.5 for each site
+b. A summary table of the mean, minimum, and maximum AQI values of O3 and PM2.5 for each site
 13. Display the data frames.
 
 ```{r}
 #12a
-
+airdat.sum1 <-
+  airdat.processed2 %>%
+  group_by(Month) %>%
+  summarise(meanO3AQI = mean(Ozone,na.rm = T), meanPM25AQI = mean(PM2.5,na.rm = T))
 #12b
-
+airdat.sum2 <-
+  airdat.processed2 %>%
+  group_by(Site.Name) %>%
+  summarise(meanO3AQI=mean(Ozone,na.rm = T),minO3AQI=min(Ozone,na.rm = T),maxO3AQI=max(Ozone,na.rm = T),
+            meanPM25AQI=mean(PM2.5,na.rm = T),minPM25AQI=min(PM2.5,na.rm = T),maxPM25AQI=max(PM2.5,na.rm = T))
+airdat.sum2[airdat.sum2 == Inf | airdat.sum2 == -Inf] <- NA #No O3 data in Triple Oak. Inf generated for min & max.
 #13
-
+print(airdat.sum1)
+print(airdat.sum2)
 ```
 
