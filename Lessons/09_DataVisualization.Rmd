@@ -22,7 +22,7 @@ library(tidyverse)
 PeterPaul.chem.nutrients <- read.csv("./Data/Processed/NTL-LTER_Lake_Chemistry_Nutrients_PeterPaul_Processed.csv")
 PeterPaul.nutrients.gathered <- read.csv("./Data/Processed/NTL-LTER_Lake_Nutrients_PeterPaulGathered_Processed.csv")
 PeterPaul.chem.nutrients.summaries <- read.csv("./Data/Processed/NTL-LTER_Lake_Summaries_PeterPaul_Processed.csv")
-EPAair <- read.csv("./Data/Processed/EPAair_O3PM25_3sites1718_processed.csv")
+EPAair <- read.csv("./Data/Processed/EPAair_O3_PM25_NC1718_Processed.csv")
 
 EPAair$Date <- as.Date(EPAair$Date, format = "%Y-%m-%d")
 PeterPaul.chem.nutrients$sampledate <- as.Date(PeterPaul.chem.nutrients$sampledate, format = "%Y-%m-%d")
@@ -77,27 +77,27 @@ O3plot <- ggplot(EPAair) +
 print(O3plot)
 
 # Fix this code
-O3plot2 <- ggplot(EPAair) +
-  geom_point(aes(x = Date, y = Ozone, color = "blue"))
+ O3plot2 <- ggplot(EPAair) +
+  geom_point(aes(x = Date, y = Ozone),color = "blue")
 print(O3plot2)
 
 # Add additional variables
 PMplot <- 
-  ggplot(EPAair, aes(x = month, y = PM2.5, shape = as.factor(year), color = Site.Name)) +
+  ggplot(EPAair, aes(x = Month, y = PM2.5, shape = as.factor(Year), color = Site.Name)) +
   geom_point()
 print(PMplot)
 
 # Separate plot with facets
 PMplot.faceted <-
-  ggplot(EPAair, aes(x = month, y = PM2.5, shape = as.factor(year))) +
+  ggplot(EPAair, aes(x = Month, y = PM2.5, shape = as.factor(Year))) +
   geom_point() +
   facet_wrap(vars(Site.Name), nrow = 3)
 print(PMplot.faceted)
 
 PMplot.faceted2 <-
-  ggplot(EPAair, aes(x = month, y = PM2.5)) +
+  ggplot(EPAair, aes(x = Month, y = PM2.5)) +
   geom_point() +
-  facet_grid(Site.Name ~ year)
+  facet_grid(Year ~ Site.Name)
 print(PMplot.faceted2)
 
 # Filter dataset within plot building
@@ -110,7 +110,7 @@ print(O3plot.Blackstone)
 # Exercise: build your own scatterplots of PeterPaul.chem.nutrients
 
 # 1. 
-# Plot surface temperatures by day of  year. 
+# Plot surface temperatures by day of year. 
 # Color your points by year, and facet by lake in two rows.
 
 
@@ -139,8 +139,8 @@ print(lightvsDOfixed)
 
 # Depth in the fields of limnology and oceanography is on a reverse scale
 tempvsdepth <- 
-  ggplot(PeterPaul.chem.nutrients, aes(x = temperature_C, y = depth)) +
-  #ggplot(PeterPaul.chem.nutrients, aes(x = temperature_C, y = depth, color = daynum)) +
+  #ggplot(PeterPaul.chem.nutrients, aes(x = temperature_C, y = depth)) +
+  ggplot(PeterPaul.chem.nutrients, aes(x = temperature_C, y = depth, color = daynum)) +
   geom_point() +
   scale_y_reverse()
 print(tempvsdepth)
