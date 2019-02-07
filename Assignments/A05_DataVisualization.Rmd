@@ -1,0 +1,86 @@
+---
+title: "Assignment 5: Data Visualization"
+author: "Student Name"
+output: pdf_document
+geometry: margin=2.54cm
+editor_options: 
+  chunk_output_type: console
+---
+
+## OVERVIEW
+
+This exercise accompanies the lessons in Environmental Data Analytics (ENV872L) on data wrangling. 
+
+## Directions
+1. Change "Student Name" on line 3 (above) with your name.
+2. Use the lesson as a guide. It contains code that can be modified to complete the assignment.
+3. Work through the steps, **creating code and output** that fulfill each instruction.
+4. Be sure to **answer the questions** in this assignment document.
+Space for your answers is provided in this document and is indicated by the ">" character.
+If you need a second paragraph be sure to start the first line with ">".
+You should notice that the answer is highlighted in green by RStudio. 
+6. When you have completed the assignment, **Knit** the text and code into a single PDF file.
+You will need to have the correct software installed to do this (see Software Installation Guide)
+Press the `Knit` button in the RStudio scripting panel.
+This will save the PDF output in your Assignments folder.
+8. After Knitting, please submit the completed exercise (PDF file) to the dropbox in Sakai. Please add your last name into the file name (e.g., "Salk_A04_DataWrangling.pdf") prior to submission.
+
+The completed exercise is due on Thursday, 14 February, 2019 before class begins.
+
+## Set up your session 
+1. Set up your session. Upload the NTL-LTER processed data files for chemistry/physics for Peter and Paul Lakes (tidy and gathered), the USGS stream gauge dataset, and the EPA Ecotox dataset for Neonicotinoids. 
+
+2. Make sure R is reading dates as date format, not something else (hint: remember that dates were an issue for the USGS gauge data).
+
+```{r}
+#1
+
+#2
+```
+## Define your theme
+3. Build a theme and set it as your default theme.
+
+```{r}
+#3
+
+```
+
+## Create graphs
+For numbers 4-7, create graphs that follow best practices for data visualization. To make your graphs "pretty," ensure your theme, color palettes, axes, and legends are edited to your liking.
+
+Hint: a good way to build graphs is to make them ugly first and then create more code to make them pretty.
+
+4. [NTL-LTER] Plot total phosphorus by phosphate, with separate aesthetics for Peter and Paul lakes. Add a line of best fit and color it black.
+
+```{r}
+#4
+
+```
+
+
+5. [NTL-LTER] Plot nutrients by date for Peter Lake, with separate colors for each depth. Facet your graph by the nutrient type.
+
+```{r}
+#5
+
+```
+
+
+6. [USGS gauge] Plot discharge by date. Create two plots, one with the points connected with geom_line and one with the points connected with geom_smooth (hint: do not use method = "lm"). 
+
+```{r}
+#6
+
+```
+Question: How do these two types of lines affect your interpretation of the data?
+
+> Answer:
+
+7. [ECOTOX Neonicotinoids] Plot the concentration, divided by chemical name. Choose a geom that accurately portrays the distribution of data points.
+
+```{r}
+#7 
+
+```
+
+
