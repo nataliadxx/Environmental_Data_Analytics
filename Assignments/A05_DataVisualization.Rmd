@@ -1,6 +1,6 @@
 ---
 title: "Assignment 5: Data Visualization"
-author: "Student Name"
+author: "Xin Wang"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
