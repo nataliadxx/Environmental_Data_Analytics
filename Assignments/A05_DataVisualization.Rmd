@@ -34,15 +34,31 @@ The completed exercise is due on Thursday, 14 February, 2019 before class begins
 
 ```{r}
 #1
-
+getwd()
+setwd("Y:/19spring/872/Environmental_Data_Analytics/Assignments")
+PPchemphy <- read.csv("../Data/Processed/NTL-LTER_Lake_Chemistry_Nutrients_PeterPaul_Processed.csv")
+USGSgage <- read.csv("../Data/Raw/USGS_Site02085000_Flow_Raw.csv")
+ecotox <- read.csv("../Data/Raw/ECOTOX_Neonicotinoids_Mortality_raw.csv")
+library(tidyverse)
 #2
+USGSgage$datetime <- as.Date(USGSgage$datetime,"%m/%d/%y")
+USGSgage$datetime <- format(USGSgage$datetime,"%y%m%d")
+creat.early.dates <- function(d) paste0(ifelse(d > 181231,"19","20"),d)
+USGSgage$datetime <- creat.early.dates(USGSgage$datetime)
+USGSgage$datetime <- as.Date(USGSgage$datetime,"%Y%m%d")
+PPchemphy$sampledate <- as.Date(PPchemphy$sampledate,"%m/%d/%y")
 ```
 ## Define your theme
 3. Build a theme and set it as your default theme.
 
 ```{r}
 #3
-
+wang <- theme_classic() +
+  theme(plot.title=element_text(size = 20,hjust = 0.5),
+        panel.background=element_rect(fill="white",color="grey30"),
+        axis.title = element_text(size = 15),
+        legend.title = element_text(size = 15), legend.text = element_text(size = 12),
+        legend.margin=margin(6,6,6,6))
 ```
 
 ## Create graphs
@@ -54,7 +70,12 @@ Hint: a good way to build graphs is to make them ugly first and then create more
 
 ```{r}
 #4
-
+ggplot(PPchemphy,aes(x=po4,y=tp_ug,color=lakename)) +
+  geom_point(size=1.5) +
+  wang +
+  xlim(c(0,50)) + 
+  labs(title = expression("TP-PO"[4]*"concentration"),x=expression("PO"[4]),y="TP",color="Lake name") +
+  geom_smooth(aes(x=po4,y=tp_ug),method = lm,color="black")
 ```
 
 
@@ -62,7 +83,9 @@ Hint: a good way to build graphs is to make them ugly first and then create more
 
 ```{r}
 #5
-
+peter <- filter(PPchemphy,lakename=="Peter Lake")
+ggplot(peter,aes(x=sampledate,color=depth)) +
+  geom_point(y=tn_ug) 
 ```
 
 
