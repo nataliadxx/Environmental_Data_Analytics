@@ -37,6 +37,7 @@ The completed exercise is due on Thursday, 14 February, 2019 before class begins
 getwd()
 setwd("Y:/19spring/872/Environmental_Data_Analytics/Assignments")
 PPchemphy <- read.csv("../Data/Processed/NTL-LTER_Lake_Chemistry_Nutrients_PeterPaul_Processed.csv")
+#Sorry, I didn't upload the gathered one.
 USGSgage <- read.csv("../Data/Raw/USGS_Site02085000_Flow_Raw.csv")
 ecotox <- read.csv("../Data/Raw/ECOTOX_Neonicotinoids_Mortality_raw.csv")
 library(tidyverse)
@@ -46,7 +47,7 @@ USGSgage$datetime <- format(USGSgage$datetime,"%y%m%d")
 creat.early.dates <- function(d) paste0(ifelse(d > 181231,"19","20"),d)
 USGSgage$datetime <- creat.early.dates(USGSgage$datetime)
 USGSgage$datetime <- as.Date(USGSgage$datetime,"%Y%m%d")
-PPchemphy$sampledate <- as.Date(PPchemphy$sampledate,"%m/%d/%y")
+PPchemphy$sampledate <- as.Date(PPchemphy$sampledate,"%Y-%m-%d")
 ```
 ## Define your theme
 3. Build a theme and set it as your default theme.
@@ -84,8 +85,17 @@ ggplot(PPchemphy,aes(x=po4,y=tp_ug,color=lakename)) +
 ```{r}
 #5
 peter <- filter(PPchemphy,lakename=="Peter Lake")
-ggplot(peter,aes(x=sampledate,color=depth)) +
-  geom_point(y=tn_ug) 
+NTL.gathered <- gather(peter,"nutrient","concentration",tn_ug:po4)
+NTL.gathered$sampledate <- as.Date(NTL.gathered$sampledate,"%Y-%m-%d")
+library(RColorBrewer)
+ggplot(NTL.gathered,aes(x=sampledate,y=concentration,color=depth)) +
+  geom_point(size=1.5) +
+  facet_wrap(vars(nutrient),nrow = 5) +
+  scale_color_distiller("Depth",palette = "GnBu",direction = -1) +
+  scale_x_date(name = "Date",date_breaks = "1 year",date_labels = "%y") +
+  scale_y_log10("Nutrient concentration") +
+  labs(title = "Nutrients in Peter Lake") +
+  theme(axis.text.x = element_text(size=10,angle = 45),plot.title=element_text(hjust = 0.5))
 ```
 
 
@@ -93,17 +103,42 @@ ggplot(peter,aes(x=sampledate,color=depth)) +
 
 ```{r}
 #6
-
+#I'm going to plot the mean discharge (84936_00060_00003).
+discharge <- filter(USGSgage,X84936_00060_00003>0)
+ggplot(discharge,aes(x=datetime,y=X84936_00060_00003)) +
+  geom_point(size=0.8,na.rm = T) + 
+  geom_line(color="Blue") +
+  scale_x_date(name = "Date",date_breaks = "6 months",date_labels = "%y/%m") +
+  scale_y_log10(expression("Mean discharge (ft"^"3"*"/s)")) +
+  labs(title = "Mean discharge for USGS gage site 02085000") +
+  wang +
+  theme(axis.text.x = element_text(angle = 45))
+ggplot(discharge,aes(x=datetime,y=X84936_00060_00003)) +
+  geom_point(size=0.8,na.rm = T) + 
+  geom_smooth() +
+  scale_x_date("Date",date_breaks = "6 months",date_labels = "%y/%m") +
+  scale_y_log10(expression("Mean discharge (ft"^"3"*"/s)")) +
+  labs(title = "Mean discharge for USGS gage site 02085000") +
+  wang +
+  theme(axis.text.x = element_text(angle = 45))
 ```
 Question: How do these two types of lines affect your interpretation of the data?
 
-> Answer:
+> Answer: The former one (geom_line) reflects the finest daily variation without any smoothing, while the latter (geom_smooth) shows the overall trend over time on a yearly temporal scale. 
 
 7. [ECOTOX Neonicotinoids] Plot the concentration, divided by chemical name. Choose a geom that accurately portrays the distribution of data points.
 
 ```{r}
 #7 
-
+attach(ecotox)
+ecotox <- filter(ecotox,Conc..Units..Std.=="AI mg/L")
+ecotox <- select(ecotox,Chemical.Name,Dur..Std.:Conc..Mean..Std.)
+ggplot(ecotox,aes(x=Chemical.Name,y=Conc..Mean..Std.,color=Conc..Type)) +
+  geom_boxplot() +
+  scale_y_log10("Mean Concentration (mg/L)") + xlab("Chemical name") +
+  wang +
+  scale_color_discrete("Concentration type") +
+  theme(axis.text.x = element_text(angle = 45))
 ```
 
 
