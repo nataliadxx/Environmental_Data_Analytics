@@ -1,0 +1,118 @@
+---
+title: "Assignment 6: Generalized Linear Models"
+author: "Student Name"
+output: pdf_document
+geometry: margin=2.54cm
+editor_options: 
+  chunk_output_type: console
+---
+
+## OVERVIEW
+
+This exercise accompanies the lessons in Environmental Data Analytics (ENV872L) on generalized linear models. 
+
+## Directions
+1. Change "Student Name" on line 3 (above) with your name.
+2. Use the lesson as a guide. It contains code that can be modified to complete the assignment.
+3. Work through the steps, **creating code and output** that fulfill each instruction.
+4. Be sure to **answer the questions** in this assignment document.
+Space for your answers is provided in this document and is indicated by the ">" character.
+If you need a second paragraph be sure to start the first line with ">".
+You should notice that the answer is highlighted in green by RStudio. 
+6. When you have completed the assignment, **Knit** the text and code into a single PDF file.
+You will need to have the correct software installed to do this (see Software Installation Guide)
+Press the `Knit` button in the RStudio scripting panel.
+This will save the PDF output in your Assignments folder.
+8. After Knitting, please submit the completed exercise (PDF file) to the dropbox in Sakai. Please add your last name into the file name (e.g., "Salk_A06_GLMs.pdf") prior to submission.
+
+The completed exercise is due on Tuesday, 26 February, 2019 before class begins.
+
+## Set up your session 
+1. Set up your session. Upload the EPA Ecotox dataset for Neonicotinoids and the NTL-LTER raw data file for chemistry/physics. 
+
+2. Build a ggplot theme and set it as your default theme.
+
+```{r}
+#1
+
+#2
+
+```
+
+## Neonicotinoids test
+Research question: Were studies on various neonicotinoid chemicals conducted in different years? 
+
+3. Generate a line of code to determine how many different chemicals are listed in the Chemical.Name column.
+
+4. Are the publication years associated with each chemical well-approximated by a normal distribution? Run the appropriate test and also generate a frequency polygon to illustrate the distribution of counts for each year, divided by chemical name. Bonus points if you can generate the results of your test from a pipe function. No need to make this graph pretty.
+
+5. Is there equal variance among the publication years for each chemical? Hint: var.test is not the correct function.
+
+```{r}
+#3
+
+#4
+
+#5
+
+```
+
+6. Based on your results, which test would you choose to run to answer your research question?
+
+> ANSWER: 
+
+7. Run this test below. 
+
+8. Generate a boxplot representing the range of publication years for each chemical. Adjust your graph to make it pretty.
+```{r}
+#7
+
+#8
+
+```
+
+
+9. How would you summarize the conclusion of your analysis? Include a sentence summarizing your findings and include the results of your test in parentheses at the end of the sentence. 
+
+> ANSWER: 
+
+## NTL-LTER test
+Research question: What is the best set of predictors for lake temperatures in July across the monitoring period at the North Temperate Lakes LTER? 
+
+11. Wrangle your NTL-LTER dataset with a pipe function so that it contains only the following criteria: 
+
+* Only dates in July (hint: use the daynum column). No need to consider leap years.
+* Only the columns: lakename, year4, daynum, depth, temperature_C
+* Only complete cases (i.e., remove NAs)
+
+12. Run an AIC to determine what set of explanatory variables (year4, daynum, depth) is best suited to predict temperature. Run a multiple regression on the recommended set of variables. 
+
+```{r}
+#11
+
+#12
+
+```
+
+13. What is the final linear equation to predict temperature from your multiple regression? How much of the observed variance does this model explain?
+
+> ANSWER: 
+
+14. Run an interaction effects ANCOVA to predict temperature based on depth and lakename from the same wrangled dataset.
+
+```{r}
+#14
+
+```
+
+15. Is there an interaction between depth and lakename? How much variance in the temperature observations does this explain?
+
+> ANSWER: 
+
+16. Create a graph that depicts temperature by depth, with a separate color for each lake. Add a geom_smooth (method = "lm", se = FALSE) for each lake. Make your points 50 % transparent. Adjust your y axis limits to go from 0 to 35 degrees. Clean up your graph to make it pretty. 
+
+```{r}
+#16
+
+```
+
