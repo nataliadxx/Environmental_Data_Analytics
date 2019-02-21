@@ -25,7 +25,7 @@ Press the `Knit` button in the RStudio scripting panel.
 This will save the PDF output in your Assignments folder.
 8. After Knitting, please submit the completed exercise (PDF file) to the dropbox in Sakai. Please add your last name into the file name (e.g., "Salk_A04_DataWrangling.pdf") prior to submission.
 
-The completed exercise is due on Thursday, 14 February, 2019 before class begins.
+The completed exercise is due on Tuesday, 19 February, 2019 before class begins.
 
 ## Set up your session 
 1. Set up your session. Upload the NTL-LTER processed data files for chemistry/physics for Peter and Paul Lakes (tidy and gathered), the USGS stream gauge dataset, and the EPA Ecotox dataset for Neonicotinoids. 
@@ -99,7 +99,7 @@ ggplot(NTL.gathered,aes(x=sampledate,y=concentration,color=depth)) +
 ```
 
 
-6. [USGS gauge] Plot discharge by date. Create two plots, one with the points connected with geom_line and one with the points connected with geom_smooth (hint: do not use method = "lm"). 
+6. [USGS gauge] Plot discharge by date. Create two plots, one with the points connected with geom_line and one with the points connected with geom_smooth (hint: do not use method = "lm"). Place these graphs on the same plot (hint: ggarrange or something similar)
 
 ```{r}
 #6
