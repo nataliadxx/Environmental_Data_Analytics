@@ -1,6 +1,6 @@
 ---
 title: "Assignment 6: Generalized Linear Models"
-author: "Student Name"
+author: "Xin Wang"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
@@ -34,9 +34,17 @@ The completed exercise is due on Tuesday, 26 February, 2019 before class begins.
 
 ```{r}
 #1
-
+setwd("Y:/19spring/872/Environmental_Data_Analytics/Assignments")
+ecotox <- read.csv("../Data/Raw/ECOTOX_Neonicotinoids_Mortality_raw.csv")
+ntl <- read.csv("../Data/Raw/NTL-LTER_Lake_ChemistryPhysics_Raw.csv")
+library(tidyverse)
 #2
-
+wang <- theme_classic() +
+  theme(plot.title=element_text(size = 20,hjust = 0.5),
+        panel.background=element_rect(fill="white",color="grey30"),
+        axis.title = element_text(size = 15),
+        legend.title = element_text(size = 15), legend.text = element_text(size = 12),
+        legend.margin=margin(6,6,6,6))
 ```
 
 ## Neonicotinoids test
@@ -50,31 +58,37 @@ Research question: Were studies on various neonicotinoid chemicals conducted in 
 
 ```{r}
 #3
-
+nlevels(ecotox$Chemical.Name)
 #4
-
+normtest <- ecotox %>%
+  group_by(Chemical.Name) %>%
+  summarise(W = shapiro.test(Pub..Year)$statistic, p = shapiro.test(Pub..Year)$p.value)
+ggplot(ecotox,aes(x=Pub..Year,color=Chemical.Name)) +
+  geom_freqpoly(stat = "count") + xlab("Publication year")
 #5
-
+bartlett.test(ecotox$Pub..Year ~ ecotox$Chemical.Name)
 ```
 
 6. Based on your results, which test would you choose to run to answer your research question?
 
-> ANSWER: 
+> ANSWER: Variance among the publication years for each chemical is not equal (Bartlett test; df=8, p<2.2e-16). Therefore, the non-parametric method, Kruskal-Wallis test should be adopted.
 
 7. Run this test below. 
 
 8. Generate a boxplot representing the range of publication years for each chemical. Adjust your graph to make it pretty.
 ```{r}
 #7
-
+kruskal.test(ecotox$Pub..Year ~ ecotox$Chemical.Name)
 #8
-
+ggplot(ecotox,aes(x=Chemical.Name,y=Pub..Year)) +
+  geom_boxplot(fill="gray") + wang + 
+  labs(title = "Publication years for each chemical", x="Chemicals", y="Publication year")
 ```
 
 
 9. How would you summarize the conclusion of your analysis? Include a sentence summarizing your findings and include the results of your test in parentheses at the end of the sentence. 
 
-> ANSWER: 
+> ANSWER: Studies on various neonicotinoid chemicals were conducted in different years (Kruskal-Wallis test; df=8, p < 2.2e-16).
 
 ## NTL-LTER test
 Research question: What is the best set of predictors for lake temperatures in July across the monitoring period at the North Temperate Lakes LTER? 
