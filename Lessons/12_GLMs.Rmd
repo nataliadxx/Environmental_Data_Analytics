@@ -60,7 +60,7 @@ cor.test(PeterPaul.chem.nutrients$irradianceWater, PeterPaul.chem.nutrients$dept
 ```
 Question: How would you report the results of this test (overall findings and report of statistical output)?
 
-> ANSWER: 
+> ANSWER: (linear regression; R2= ,df= ,p<)
 
 So, we see there is a significant negative correlation between irradiance and depth (lower light levels at greater depths), and that this model explains about 31 % of the total variance in irradiance. Let's visualize this relationship and the model itself. 
 
@@ -114,6 +114,11 @@ irradiancebydepth2 <-
 print(irradiancebydepth2)
 
 # Make the graph attractive
+irradiancebydepth2 <- 
+    ggplot(PeterPaul.chem.nutrients, aes(x = depth, y = irradianceWater)) +
+    geom_point(size=0.8) +
+    scale_y_log10() +
+    geom_smooth(method = 'lm', se = FALSE, color = "blue")
 
 ```
 
