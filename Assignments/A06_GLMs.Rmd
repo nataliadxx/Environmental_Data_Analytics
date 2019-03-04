@@ -103,30 +103,51 @@ Research question: What is the best set of predictors for lake temperatures in J
 
 ```{r}
 #11
-
+ntl$sampledate <- as.Date(ntl$sampledate,"%m/%d/%y")
+library(lubridate)
+ntl <- mutate(ntl,month=month(sampledate))
+ntl.skinny <- ntl %>%
+  filter(month==7) %>%
+  select(lakename,year4,daynum,depth,temperature_C) %>%
+  na.omit()
 #12
-
+TAIC <- lm(temperature_C ~ year4+daynum+depth, data = ntl.skinny)
+step(TAIC)
+#year4, daynum and depth are all best suited explanatory variables
+summary(TAIC)
 ```
 
 13. What is the final linear equation to predict temperature from your multiple regression? How much of the observed variance does this model explain?
 
-> ANSWER: 
+> ANSWER: temperature = -8.58 + 0.01 year4 + 0.04 daynum - 1.95 depth; It explains 74% of the observed variance.
 
 14. Run an interaction effects ANCOVA to predict temperature based on depth and lakename from the same wrangled dataset.
 
 ```{r}
 #14
-
+#Shapiro.test doesn't work for samples larger than 5000.
+qqnorm(ntl.skinny$temperature_C)
+qqline(ntl.skinny$temperature_C)
+qqnorm(ntl.skinny$depth)
+qqline(ntl.skinny$depth)
+TANCOVA <- lm(temperature_C ~ lakename + depth, data = ntl.skinny)
+summary(TANCOVA)
+TANCOVA.interaction <- lm(temperature_C ~ lakename * depth, data = ntl.skinny)
+summary(TANCOVA.interaction)
 ```
 
 15. Is there an interaction between depth and lakename? How much variance in the temperature observations does this explain?
 
-> ANSWER: 
+> ANSWER: Yes, there is an interaction between depth and lakename. It explains about 79% of the variance in temperature observations.
 
 16. Create a graph that depicts temperature by depth, with a separate color for each lake. Add a geom_smooth (method = "lm", se = FALSE) for each lake. Make your points 50 % transparent. Adjust your y axis limits to go from 0 to 35 degrees. Clean up your graph to make it pretty. 
 
 ```{r}
 #16
-
+ggplot(ntl.skinny,aes(x=depth,y=temperature_C,color=lakename)) + wang +
+  geom_point(size=0.8,alpha=0.5) + 
+  geom_smooth(method = "lm", se=F) +
+  scale_color_brewer("Lake name",palette = "Set1") +
+  ylim(c(0,35)) + labs(x="Depth",y="Temperature (°C)")
 ```
 
