@@ -1,0 +1,105 @@
+---
+title: "Assignment 8: Time Series Analysis"
+author: "Student Name"
+output: pdf_document
+geometry: margin=2.54cm
+editor_options: 
+  chunk_output_type: console
+---
+
+## OVERVIEW
+
+This exercise accompanies the lessons in Environmental Data Analytics (ENV872L) on time series analysis.
+
+## Directions
+1. Change "Student Name" on line 3 (above) with your name.
+2. Use the lesson as a guide. It contains code that can be modified to complete the assignment.
+3. Work through the steps, **creating code and output** that fulfill each instruction.
+4. Be sure to **answer the questions** in this assignment document.
+Space for your answers is provided in this document and is indicated by the ">" character.
+If you need a second paragraph be sure to start the first line with ">".
+You should notice that the answer is highlighted in green by RStudio. 
+6. When you have completed the assignment, **Knit** the text and code into a single PDF file.
+You will need to have the correct software installed to do this (see Software Installation Guide)
+Press the `Knit` button in the RStudio scripting panel.
+This will save the PDF output in your Assignments folder.
+8. After Knitting, please submit the completed exercise (PDF file) to the dropbox in Sakai. Please add your last name into the file name (e.g., "Salk_A08_TimeSeries.pdf") prior to submission.
+
+The completed exercise is due on Tuesday, 19 March, 2019 before class begins.
+
+## Brainstorm a project topic
+1. Spend 15 minutes brainstorming ideas for a project topic, and look for a dataset if you are choosing your own rather than using a class dataset. Remember your topic choices are due by the end of March, and you should post your choice ASAP to the forum on Sakai.
+
+Question: Did you do this?
+
+> ANSWER: 
+
+## Set up your session 
+2. Set up your session. Upload the EPA air quality raw dataset for PM2.5 in 2018, and the processed NTL-LTER dataset for nutrients in Peter and Paul lakes. Build a ggplot theme and set it as your default theme. Make sure date variables are set to a date format.
+
+```{r}
+
+```
+
+
+## Run a hierarchical (mixed-effects) model
+
+Research question: Do PM2.5 concentrations have a significant trend in 2018?
+
+3. Run a repeated measures ANOVA, with PM2.5 concentrations as the response, Date as a fixed effect, and Site.Name as a random effect. This will allow us to extrapolate PM2.5 concentrations across North Carolina.
+
+3a. Illustrate PM2.5 concentrations by date. Do not split aesthetics by site.
+
+```{r}
+
+```
+
+3b. Insert the following line of code into your R chunk. This will eliminate duplicate measurements on single dates for each site.
+PM2.5 = PM2.5[order(PM2.5[,'Date'],-PM2.5[,'Site.ID']),]
+PM2.5 = PM2.5[!duplicated(PM2.5$Date),]
+
+3c. Determine the temporal autocorrelation in your model. 
+
+3d. Run a mixed effects model. 
+
+```{r}
+
+```
+
+Is there a significant increasing or decreasing trend in PM2.5 concentrations in 2018? 
+
+> ANSWER: 
+
+3e. Run a fixed effects model with Date as the only explanatory variable. Then test whether the mixed effects model is a better fit than the fixed effect model. 
+
+```{r}
+
+```
+
+
+Which model is better?
+
+> ANSWER: 
+
+
+## Run a Mann-Kendall test
+
+Research question: Is there a trend in total N surface concentrations in Peter and Paul lakes? 
+
+4. Duplicate the Mann-Kendall test we ran for total P in class, this time with total N for both lakes. Make sure to run a test for changepoints in the datasets (and run a second one if a second change point is likely). 
+
+```{r}
+
+```
+
+
+What are the results of this test?
+
+> ANSWER: 
+
+5. Generate a graph that illustrates the TN concentrations over time, coloring by lake and adding vertical line(s) representing changepoint(s).
+
+```{r}
+
+```
+

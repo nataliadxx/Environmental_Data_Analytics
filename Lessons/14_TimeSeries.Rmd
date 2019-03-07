@@ -1,0 +1,178 @@
+
+---
+title: "14: Time Series Analysis"
+author: "Environmental Data Analytics | Kateri Salk"
+date: "Spring 2019"
+output: pdf_document
+geometry: margin=2.54cm
+editor_options: 
+  chunk_output_type: console
+---
+
+## LESSON OBJECTIVES
+1. Describe the aspects of hierarchical models, fixed effects, and random effects
+2. Choose and justify appropriate statistical models when time is an explanatory variable
+3. Apply Mann-Kendall and Seasonal Mann-Kendall to datasets with temporal components
+
+## SET UP YOUR DATA ANALYSIS SESSION
+
+```{r, message = FALSE, warning = FALSE}
+getwd()
+library(tidyverse)
+#install.packages("trend")
+library(trend)
+
+
+PeterPaul.nutrients <- read.csv("./Data/Processed/NTL-LTER_Lake_Nutrients_PeterPaul_Processed.csv")
+USGS.flow.data <- read.csv("./Data/Raw/USGS_Site02085000_Flow_Raw.csv")
+
+# Rename columns
+colnames(USGS.flow.data) <- c("agency_cd", "site_no", "datetime", 
+                              "discharge.max", "discharge.max.approval", 
+                              "discharge.min", "discharge.min.approval", 
+                              "discharge.mean", "discharge.mean.approval", 
+                              "gage.height.max", "gage.height.max.approval", 
+                              "gage.height.min", "gage.height.min.approval", 
+                              "gage.height.mean", "gage.height.mean.approval")
+
+# Set date to date format
+PeterPaul.nutrients$sampledate <- as.Date(PeterPaul.nutrients$sampledate, 
+                                               format = "%Y-%m-%d")
+USGS.flow.data$datetime <- as.Date(USGS.flow.data$datetime, 
+                              format = "%m/%d/%y")
+
+mytheme <- theme_classic(base_size = 14) +
+  theme(axis.text = element_text(color = "black"), 
+        legend.position = "top")
+theme_set(mytheme)
+
+```
+
+## NONPARAMETRIC TREND TESTS
+
+In many environmental datasets (especially climate and hydrology), we might not expect a linear trend in the response variable over time. In this case, we will need to employ a nonparametric test to determine whether there is a monotonic trend (i.e., consistent increase or decrease but not necessarily linear) over time. We will illustrate a few examples of nonparametric trend tests today with the `trend` package. 
+
+A vignette for the `trend` package can be found here: https://cran.r-project.org/web/packages/trend/vignettes/trend.pdf. More details here: https://cran.r-project.org/web/packages/trend/trend.pdf.
+
+We will run a Mann-Kendall and a Seasonal Mann-Kendall test today, but there are additional variants of these tests within the package including a correlated Seasonal Mann-Kendall test, a multivariate Mann-Kendall test, a partial Mann-Kendall test, a partial correlation trend test, and a Cox and Stuart trend test. Look into the documentation for these tests to determine which one is appropriate for your purposes.
+
+### Mann-Kendall Test
+A Mann-Kendall test will analyze whether there is a monotonic trend in the response variable over time. Let's use the Mann-Kendall test to investigate whether there is a trend in total phosphorus concentrations in Peter Lake over time. 
+
+```{r}
+# Wrangle our dataset
+PeterPaul.nutrients.surface <- 
+  PeterPaul.nutrients %>%
+  select(-lakeid, -depth_id, -comments) %>%
+  filter(depth == 0) %>%
+  filter(!is.na(tp_ug))
+
+# Initial visualization of data
+ggplot(PeterPaul.nutrients.surface, aes(x = sampledate, y = tp_ug, color = lakename)) + 
+  geom_point() +
+  scale_color_manual(values = c("#7fcdbb", "#253494"))
+
+# Split dataset by lake
+Peter.nutrients.surface <- filter(PeterPaul.nutrients.surface, lakename == "Peter Lake")
+Paul.nutrients.surface <- filter(PeterPaul.nutrients.surface, lakename == "Paul Lake")
+
+# Run a Mann-Kendall test
+mk.test(Peter.nutrients.surface$tp_ug)
+
+```
+
+However, it looks like there might be a breakpoint in our dataset. Further, we know that Peter Lake underwent experimental fertilization starting in May 1993, a perturbation which we might expect to have induced a regime shift in the ecosystem. In this case, we might want to find out whether there is a breakpoint, or changepoint, in our dataset. 
+
+### Pettitt's Test
+Pettitt's test is also included in the `trend` package. This nonparametric test will determine whether there is a shift in the central tendency of the time series and will tell us at what point the changepoint occurs (if it detects one). Note: Pettitt's Test will only test for one changepoint, and further tests must be run if multiple change points are suspected.
+```{r}
+# Test for change point
+pettitt.test(Peter.nutrients.surface$tp_ug)
+
+# Run separate Mann-Kendall for each change point
+mk.test(Peter.nutrients.surface$tp_ug[1:34])
+mk.test(Peter.nutrients.surface$tp_ug[35:132])
+
+# Is there a second change point?
+pettitt.test(Peter.nutrients.surface$tp_ug[35:132])
+
+# Run another Mann-Kendall for the second change point
+mk.test(Peter.nutrients.surface$tp_ug[35:113])
+mk.test(Peter.nutrients.surface$tp_ug[114:132])
+
+# Run the same test for Paul Lake. 
+mk.test(Paul.nutrients.surface$tp_ug)
+pettitt.test(Paul.nutrients.surface$tp_ug)
+
+# Add vertical lines to the original graph to represent change points
+ggplot(PeterPaul.nutrients.surface, aes(x = sampledate, y = tp_ug, color = lakename)) + 
+  geom_point() +
+  scale_color_manual(values = c("#7fcdbb", "#253494"))
+
+```
+### Seasonal Mann-Kendall
+
+Like a **Mann-Kendall Test**, the **Seasonal Mann-Kendall Test**, or **Hirsch-Slack Test**, analyzes trends in response variables over time. It replaces the traditional Mann-Kendall when there are seasonal trends in a dataset that obscure the overall direction of the trend. It is important to note that "seasonal" does not necessarily equate to actual seasons but can represent any time period within which there are oscillating temporal trends. The test needs at least two seasons to operate.
+
+For instance, we might want to know whether there is a change in discharge of the Eno River over the last 10 years.
+```{r}
+# Wrangle the USGS dataset
+USGS.flow.data.trimmed <- USGS.flow.data %>%
+  select(datetime, discharge.mean) %>%
+  filter(datetime > as.Date("2008-12-31") & datetime < as.Date("2019-01-01"))
+
+# Visualize the data
+ggplot(USGS.flow.data.trimmed, aes(x = datetime, y = discharge.mean)) +
+  geom_point(size = 0.5, alpha = 0.5)
+```
+
+### Interpolation
+Some situations may require us to predict values for data points that fall within the time frame of our analyses but were not sampled. For instance, the `smk.test` function needs to take a time series format rather than a data frame, which cannot have any NAs. In this case, we will want to make an estimate of the missing values based on what we know about the dataset using a method called **interpolation.** There are several options for interpolation: 
+
+  + **Means interpolation:** Defines values between sampled values as the mean value within a dataset. Uses the R function `aggregate`.
+  
+  + **Piecewise constant interpolation:** Defines values between sampled values as the value of the nearest sampled value. Uses the R function `approx` with `method = "constant"`
+  
+  + **Linear interpolation:** Defines values between sampled values based on the slope between sampled values. Uses the R function `approx` with `method = "linear"`
+  
+  + **Spline interpolation:** Defines values between sampled values based on polynomial functions between sampled values and chooses the polynomials so that they fit smoothly together. Uses the R function `splinefun`.
+
+Question: Under what circumstances would you consider each of these options for interpolation? 
+
+> ANSWER: 
+
+Tip: Check your dataset to see if there is an NA value in the first row. You may need to add a value for that first row or trim the dataset so that the new first row corresponds to the first measurement.
+
+```{r}
+# Run a linear interpolation of the dataset to fill in gaps
+USGS.flow.data.interpolated <- approx(USGS.flow.data.trimmed$datetime,
+                                      USGS.flow.data.trimmed$discharge.mean, 
+                                      method = "linear", n = 3630)
+
+# Turn the interpolated dataset into a proper dataframe
+USGS.flow.data.interpolated <- do.call(cbind.data.frame, USGS.flow.data.interpolated)
+names(USGS.flow.data.interpolated) <- c("Date", "Discharge")
+USGS.flow.data.interpolated$Date <- as.Date(USGS.flow.data.interpolated$Date, 
+                                            origin = "1970/01/01")
+
+# Create a time series object
+USGS.flow.data.timeseries <- ts(USGS.flow.data.interpolated$Discharge, 
+                                start = c(2009, 1) ,frequency = 12)
+
+# Run a Seasonal Mann-Kendall test
+USGS.smktest <- smk.test(USGS.flow.data.timeseries)
+USGS.smktest
+summary(USGS.smktest)
+```
+
+Interpreting results of the Seasonal Mann-Kendall Test: 
+
+  + Overall z score and p-value: test the alternative hypothesis that the true change in response variable over time is not equal to zero
+  
+  + Monthly z score and p-value: test the alternative hypothesis that the true change in response variable over time for a given month is not equal to zero
+  
+  + S: reports trend. A positive value indicates response variable increased over time, and a negative value indicates response variable decreased over time
+  
+Question: How would you interpret the results of the Seasonal Mann-Kendall test for this example?
+
+> ANSWER: 
