@@ -19,7 +19,7 @@ editor_options:
 ```{r, message = FALSE, warning = FALSE}
 getwd()
 library(tidyverse)
-#install.packages("trend")
+install.packages("trend")
 library(trend)
 
 
@@ -107,7 +107,9 @@ pettitt.test(Paul.nutrients.surface$tp_ug)
 # Add vertical lines to the original graph to represent change points
 ggplot(PeterPaul.nutrients.surface, aes(x = sampledate, y = tp_ug, color = lakename)) + 
   geom_point() +
-  scale_color_manual(values = c("#7fcdbb", "#253494"))
+  scale_color_manual(values = c("#7fcdbb", "#253494")) +
+  geom_vline(xintercept = as.Date("1993/5/26"), lty=2) +
+  geom_vline(xintercept = as.Date("1998/1/1"), lty=2)
 
 ```
 ### Seasonal Mann-Kendall
