@@ -1,0 +1,4 @@
+Data were downloaded from https://water.usgs.gov/GIS/huc.html and subset for features intersecting the NC State boundary. 
+
+Spring 2019
+John.Fay@duke.edu
