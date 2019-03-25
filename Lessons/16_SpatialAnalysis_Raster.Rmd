@@ -1,0 +1,221 @@
+---
+title: "Spatial Analysis in R, Part 2"
+author: "John Fay"
+date: "March 21, 2019"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    theme: "cosmo"
+geometry: margin=2.54cm
+editor_options:
+  chunk_output_type: console
+---
+# LESSON OBJECTIVES
+1. Review basics of vector data analysis
+2. Introduce Raster data model
+3. Explor raster analysis with `raster` package
+
+A. Import shapefiles: NC Counties and NC HUC8s
+B. Import NLCD and DEM data
+C. Explore 
+
+## ABOUT RASTER DATA
+https://datacarpentry.org/organization-geospatial/01-intro-raster-data/index.html
+
+Raster data is any pixelated (or gridded) data where each pixel is associated with a specific geographical location. The value of a pixel can be continuous (e.g. elevation) or categorical (e.g. land use). If this sounds familiar, it is because this data structure is very common: it’s how we represent any digital image. A geospatial raster is only different from a digital photo in that it is accompanied by spatial information that connects the data to a particular location. This includes the raster’s extent and cell size, the number of rows and columns, and its coordinate reference system (or CRS).
+
+#### Some examples of CONTINUOUS raster data sets:
+1. Precipitation maps
+2. Maps of tree height derived from LiDAR data
+3. Elevation values for a region 
+
+#### Some examples of CATEGORIGAL raster data sets:
+1. Landcover / land-use maps.
+2. Tree height maps classified as short, medium, and tall trees.
+3. Elevation maps classified as low, medium, and high elevation.
+
+#### Attributes of raster data sets:
+1. Extent
+2. Cell size/resolution
+3. Coordinate reference system
+4. Values representing missing data
+
+#### Multi-band raster data: 
+1. Visual color bands: RGB
+2. Multispectral/hyper spectral imagery
+
+#### Raster data files and formats
+1. ASCII (TIFF, BIN, BIN) vs Binary (ASCII)
+2. Headers and World files
+
+```{r Prepare for analysis}
+getwd()
+#Old libraries
+library(tidyverse)
+library(sf)
+library(mapview)
+library(leaflet)
+library(RColorBrewer)
+
+#New ones
+#import.packages('raster')
+library(raster)
+#import.packages('FedData')  #<-- useful for extracting spatial data
+library(FedData)
+```
+
+
+```{r Import and transform HUC and County Data to a common CRS}
+#Read in the HUCs and save its CRS to a variable
+nc_hucs <- st_read('./Data/Spatial/huc_250k_nc.shp')
+st_crs(nc_hucs)
+plot(nc_hucs['SUB'])
+
+#Read in the counties, filtering for Durham, Orange, Chatham, and Wake
+tri_counties <- st_read('./Data/Spatial/cb_2017_us_county_20m.shp') %>% 
+  filter(STATEFP == 37 & NAME %in% c('Durham', 'Orange', 'Chatham', 'Wake'))
+st_crs(tri_counties)
+
+#Transform the counties sf to match the hucs sf
+tri_counties <- st_transform(tri_counties,st_crs(nc_hucs))
+st_crs(tri_counties)
+
+#Select the HUCs that intersect the counties
+hucMask <- st_intersects(nc_hucs,st_union(tri_counties),sparse = FALSE)
+tri_hucs <- nc_hucs[hucMask,]
+
+#Plot the results
+ggplot() + 
+  geom_sf(data=nc_hucs,aes(fill = SUB), color='white') +   #Show all HUC8s
+  geom_sf(data=tri_hucs, fill = NA, size = 1) +            #Show selected HUC8s
+  geom_sf(data=tri_counties, fill=NA, color='black')       #Add the counties
+```
+
+
+Fetch elevation and land cover data using the FedData package's `get_nlcd` command:
+```{r Fetch NLCD data, eval=FALSE}
+#Fetch the data
+nlcd2011 <- get_nlcd(template = tri_counties,             #Template specifies the extent to fetch
+                     label='tri',                         #Sets a label for the output
+                     year=2011,                           #The year of the land cover dataset to fetch
+                     dataset='landcover',                 #The dataset to fetch
+                     raw.dir='./Data/Spatial/tmpNLCD',    #Where to fetch the tiles (creates this folder)
+                     extraction.dir = './Data/Spatial')   #Where to store the merged tiles (final result)
+```
+
+```{r}
+#If the above fails or takes too long, uncomment and use the command below
+#nlcd2011 <- raster('./Data/Spatial/tri1_NLCD_2011_landcover.tif')
+
+#Plot the data
+plot(nlcd2011)
+
+#Uncomment to remove all temporary tiles
+#unlink('./Data/Spatial/tmpNLCD',recursive = TRUE)
+```
+## IMPORTANT: These downloads may exceed your GitHub push limit. Before pushing, delete all intermediate data - nothing over 100MB!! 
+
+Now you try it: Fetch elevation data from the National Elevation Dataset (NED). The command is `get_ned` and its parameters are fewer than NLCD: 
+* use the same sf dataframe as your `template` (the `tri_counties` dataframe)
+* use the same `label`, `raw.dir`, and `extraction.dir` as above too. 
+```{r Fetch Elevation data, eval=FALSE}
+#Fetch elevation data for the "tri_counties" extent into a raster called "dem30"
+dem30 <- get_ned(template = tri_counties,
+                 label='tri',
+                 raw.dir='./Data/Spatial',
+                 extraction.dir = './Data/Spatial')
+```
+
+```{r Resample the 30m elevation data to 90 meters}
+#Resample the 30m data to 90m (factor of 3)
+dem90 <- aggregate(dem30,fact=3,fun=mean,filename='./Data/Spatial/tri_NED_90.tif')
+
+#If the NED extraction & aggergation fails, uncomment and use the dataset below
+#dem90 <- raster('./Data/Spatial/tri1_NED_90.tif')
+
+#Plot the data
+plot(dem90)
+
+
+#Uncomment and run to delete the 30m tiles 
+#unlink('./Data/Spatial/1', recursive = TRUE)
+#remove.file('tri_NED_1.tif')
+
+```
+
+## Raster data
+A raster is fundamentally a data matrix, and individual pixel values can be
+extracted by regular matrix subscripting. For example, the value of
+the _bottom_-left corner pixel:
+
+```{r get_raster_values}
+nlcd2011[1, 1]
+```
+
+
+The meaning of this number is not immediately clear. For this particular
+dataset, the mapping of values to land cover classes is described in the data
+attributes:
+
+```{r raster_attr}
+head(nlcd2011@data@attributes[[1]])
+```
+
+
+## Visualization options
+```{r}
+#View a histogram of the pixel values
+hist(dem90)
+
+#View with the image command
+image(dem90,col = terrain.colors(20))
+
+#View a slice of data a different color
+image(dem90, zlim=c(50,80), add=TRUE)
+
+#Add contours
+contour(dem90,add=TRUE)
+
+```
+
+
+## Raster math
+```{r}
+dem_ft = dem90 * 3.28
+dem_ft
+plot(dem_ft)
+```
+
+
+## Raster tranformations
+Raster projections require Pro4strings, which you can get from the spatialreference.org web site. Here we get the proj4 string for UTM Zone 17N (epsg = 26917)
+```{r}
+dem90_utm <- projectRaster(dem90,crs='+proj=utm +zone=17 +ellps=GRS80 +datum=NAD83 +units=m +no_defs')
+image(dem90_utm)
+```
+
+
+## Raster functions
+```{r}
+slope90 <- terrain(dem90_utm,opt='slope')
+hist(slope90)
+image(slope90,zlim= c(0,0.1),col = topo.colors(45))
+```
+> What are some other terrain functions? 
+
+
+## Cropping and masking raster rasters
+```{r}
+triNLCD_cropped <- crop(nlcd2011, tri_counties %>% filter(NAME=='Durham'))
+plot(triNLCD_cropped)
+
+triNLCD_masked <- mask(triNLCD_cropped, tri_counties %>% filter(NAME=='Durham'))
+plot(triNLCD_masked)
+
+hist(triNLCD_masked)
+
+urban <- mask(triNLCD_cropped, triNLCD_cropped %in% c(21,22,23,24), maskvalue = FALSE)
+plot(urban)
+```
+

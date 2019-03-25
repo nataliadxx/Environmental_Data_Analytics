@@ -1,0 +1,592 @@
+---
+title: "Spatial Analysis in R, Part 1"
+author: "John Fay"
+date: "March 19, 2019"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    theme: "cosmo"
+geometry: margin=2.54cm
+editor_options:
+  chunk_output_type: console
+---
+# LESSON OBJECTIVES
+1. Discuss the importance of location in environmental data analysis
+2. Examine how spatial features are represented: vector (vs raster) data model
+3. Quick Maps: Plotting coordinate data using `ggplot`, `mapview` and `leaflet` 
+4. Examine how spatial features are stored in R: "Simple Features" and the `sf` package
+5. Review coordinate reference systems and discuss why they are important
+6. Explore how to read, plot, and analyze spatial data with `sf`, `ggplot`, `mapview`, and `leaflet`
+
+
+# OPENING DISCUSSION:<br>The importance of location in environmental data analysis
+We've spent time exploring how to wrangle data tables to reveal new information. An important step forward came when we joined two datasets on a common attribute (e.g. joining physical and nutrient attribute tables for LTER lakes), which allowed us to examine relationships across these two sources. 
+
+With GIS and spatial analysis, we don't necessarily need a common attribute to join tables from different sources; instead, we can use location. Thus, if we know the location of our NTL-LTER lakes, we can compute their distances from the EPA air quality monitoring locations to explore possible relationships between the two data sets. Thus, location is quite a powerful ally in environmental data analysis. 
+
+In this lesson, we explore how data can be represented spatially, and how we can use location to query and analyze data. We'll introduce some useful R libraries for handling, analyzing, and visualizing spatial datasets.
+
+
+# 1. REPRESENTING SPATIAL DATA IN R: 
+## The vector (vs raster) data model
+Spatial data are modeled in two formats: vector and raster. Today, we'll be concentrating on vector data, returning to raster a bit later. With vector data, features are represented with a combination of three elements: **geometry**, **attributes**, and a **coordinate reference system**, or `crs`. Let's talk about the first two and then come back to the crs a bit later. 
+
+
+### Feature _geometries_
+With vector data, a spatial feature takes the form of a _point_, _line_, or a _polygon_, collectively referred to as its **geometry**. 
+
+> _Question_: Think of some features you might see on a map. Would they best be represented as a point, line, or polygon? Can some features be represented by more than one type? Can you think of any features that you couldn't map with a point/line/polygon? 
+
+
+### Feature _attributes_
+In addition to its geometry, **attributes** are also linked to spatial features. Attributes hold all the non-geometric information associated with the feature: an ID or name, some measurements, a collection date, etc. 
+
+
+### Feature _geometries + attributes_
+When we combine geometries with attributes we get a **spatially enabled dataframe**, and we actually have a few of these in the datasets we've been working with: the EPA air quality datasets contain two fields, `SITE_LATITUDE` and `SITE_LONGITUDE` which combine to define a point geometry. And with that, we can easily plot our data geographically, i.e. "map" the data: 
+
+
+## Quick Maps: Visualizing XY data
+
+### Plotting coordinate data with _ggplot_
+```{r Map the 2017 EPA Ozone Data}
+#Import the tidyverse libary 
+library(tidyverse, quietly = TRUE)
+
+#Read the data 2017 Ozone data
+EPAair_PM25_NC2018_raw <- read.csv("./Data/Raw/EPAair_PM25_NC2018_raw.csv")
+
+#Reduce our data to just one record for each location, computing mean and max daily AQI values
+EPAair_PM_avg <- EPAair_PM25_NC2018_raw %>% 
+  group_by(Site.Name, COUNTY, SITE_LATITUDE, SITE_LONGITUDE) %>% 
+  summarize(meanPM = mean(Daily.Mean.PM2.5.Concentration),
+            maxPM = max(Daily.Mean.PM2.5.Concentration))
+
+#Plot the data using longitude and latitude as X and Y
+ggplot(EPAair_PM_avg, aes(x=SITE_LONGITUDE, y=SITE_LATITUDE)) + 
+  geom_point(aes(color=meanPM), size=4) #+ coord_equal() 
+```
+
+This is more of a proof of concept than a useful map. We can sort of visualize spatial patterns in the data, but without context of scale or location, it's somewhat difficult. We can greatly improve this map with the help of some mapping packages for R...
+
+
+### Plotting with _Mapview_
+See https://rdrr.io/cran/mapview/man/mapviewOptions.html for more info.
+```{r Plot EPA locations with `mapview`, eval=FALSE, include=FALSE}
+#(Install and) Load the mapView package
+#install.packages('mapview')
+library(mapview)
+
+#Set the available map backgrounds
+mapviewOptions(basemaps = c('OpenStreetMap','Esri.WorldImagery','Stamen.Toner','Stamen.Watercolor'))
+
+#Create a mapView map from our EPA data
+myMap = mapview(EPAair_PM_avg,
+         xcol = "SITE_LONGITUDE",
+         ycol = "SITE_LATITUDE", 
+         crs = 4269, 
+         grid = FALSE)
+
+#Show the map
+myMap
+
+#Save the map (if you want, and if "phantomJS" is installed)
+#mapshot(myMap, file='EPA_SiteMap.png')  #Save to a PNG file
+#mapshot(myMap, file='EPA_SiteMap.html') #Save to an HTML file
+```
+
+Much better, no? And interactive! But while MapView loosely follows a familiar ggplot format, it's not quite as powerful as other formats, such as `Leaflet`...
+
+
+### Plotting with _Leaflet_
+See http://rstudio.github.io/leaflet/ for more info
+```{r Plot with leaflet}
+#Import libraries 
+#install.packages('leaflet')
+library(leaflet)
+
+#Create the map and add Tiles
+myMap  <- leaflet(data=EPAair_PM_avg) %>% 
+  addTiles() %>% 
+  addCircleMarkers(~SITE_LONGITUDE,~SITE_LATITUDE,
+                   radius=(~meanPM*2),
+                   stroke = FALSE, 
+                   fillOpacity = 0.3,
+                   popup = ~as.character(`Site.Name`))
+#Show the map
+myMap
+```
+
+There's much more we can do to make these maps prettier and more powerful, but we'll come back to that. But take time to notice the power of mapping: like previous plots, we are able to interpret patterns in our dataset, but in geographically mapping our data, we can visualize these patterns in a much richer context by viewing them next to other spatial datasets (e.g. our basemaps). 
+Ok, let's continue talking about spatial features in the vector model...
+
+
+## STORING GEOMETRIES IN R
+In our EPA example, we used a _coordinate pair_ (e.g. Latitude/Longitude) to represent the location of our point features. _But how might line and polygon features represented?_ 
+
+Well, a line is simply a sequence of points (often called _vertices_ in this context), and so line features can be represented as a series of point coordinates. 
+
+And polygons are just areas enclosed by a line, so polygon features can be represented as as a series of coordinate pairs where the last coordinate pair is the same as the first. [Some polygons can have holes in the middle, which we can handle too, but let's keep it simple for now...]
+
+![Figure of different geometries.](https://bit.ly/2TnuoJc)
+
+Thinking back to our EPA dataset, however, it seems quite a bit more cumbersome to store collections of coordinate pairs for line and polygon features compared to our simple `SITE_LATITUDE` and `SITE_LONGITUDE` columns. 
+
+So how are geometries usually stored and dealt with in R? **Enter the `sf` package.**
+
+## SIMPLE FEATURES & THE `sf` PACKAGE
+While the `sp` package was the first to handle vector spatial data, it was replaced with the `sf` package in 2016, and that made our lives easier. Short for "Simple Features", the `sf` package includes a structured format for storing geometries in spatially-enabled dataframes, solving the issue we just mentioned about storing gobs of coordinate pairs. 
+
+The `sf` package also enables us to read from and write to a number of spatial data formats (using the open source GDAL engine) and perform a host of spatial operations with these spatial features (using the open source GEOS engine). It also provides tools for dealing with that third component of geospatial data that we haven't yet discussed: the coordinate reference system. 
+
+Let's explore a few examples to familiarize ourselves with the `sf` package. 
+
+First, let's convert our EPA dataframe to a simple features ("sf") dataframe and explore what's different:
+```{r Create simple features from lat/lng fields}
+#Import the sf library
+#install.packages('sf')
+library(sf)
+
+#Convert the dataset to a spatially enabled "sf" data frame
+EPAair_PM_avg_sf <- st_as_sf(EPAair_PM_avg,coords = c('SITE_LONGITUDE','SITE_LATITUDE'),crs=4326)
+
+#Do you see a new column name?                
+colnames(EPAair_PM_avg_sf)
+
+#What is the class of the values in the geometry column?
+class(EPAair_PM_avg_sf$geometry)
+
+#What does this look like
+head(EPAair_PM_avg_sf)
+
+#Plot the geometry...
+plot(EPAair_PM_avg_sf$geometry)
+
+#Plot everything
+plot(EPAair_PM_avg_sf)
+
+#Plot everything -- with MapView
+#mapview(EPAair_PM_avg_sf)
+
+#Plot a single variable as a map
+plot(EPAair_PM_avg_sf['meanPM'],
+     pch=16,                                         #Set sumbol
+     cex=4,                                          #Size of point
+     graticule = st_crs(EPAair_PM_avg_sf),           #Add a graticule
+     axes=TRUE)                                      #Add axes
+
+
+#With geometries now available in a column, we can use ggplot with the geom_sf object
+ggplot() + 
+  geom_sf(data=EPAair_PM_avg_sf, aes(color=meanPM), size=4)
+
+```
+
+So, we see that our "sf" dataframe works much like our familiar dataframe, only it has a new column containing *geometries* for each record. This pretty much sums up what a GIS is: a familiar table of records and attributes (i.e. an "Information System"), but with one attribute that includes a geometry that allows us to incorporate geography into our analysis (i.e. a "*Geographic* Information System")!
+
+
+## SPATIAL ANALYSIS [First attempt]
+With our EPA data now spatially enabled, we can perform spatial analysis with the data. A simple analysis to buffer points a certain distance, done with the `st_buffer` operation. 
+
+```{r Spatial Analysis: Geometric operations}
+#Buffer the Durham Armory point 0.1 degrees
+Durham_buffer <- EPAair_PM_avg_sf %>% 
+  filter(Site.Name == 'Durham Armory') %>% 
+  st_buffer(0.1)
+
+#View the result
+plot(Durham_buffer$geometry,
+     graticule = st_crs(Durham_buffer),           #Add a graticule
+     axes=TRUE)                                   #Add axes
+
+```
+
+In running the above, you get an warning and the shape looks elliptical, not circular. What's up? Well, it's time to chat about coordinate reference systems...
+
+
+## COORDINATE REFERENCE SYSTEMS ("CRS")
+So far, all our spatial data have been using lat/long coordinates. This is fine for plotting any many other operations, but lat/long coordinates are *spherical* coordinates (i.e. angles), and the geometry we are used to is done on *planar* coordinates (i.e. lengths). Going between the two is a tricky matter because:
+
+* You can't flatten a sphere into a plane without distorting area, distance, shape, and/or direction.
+
+* The earth is not a perfect sphere to begin with.
+
+The first issue is handled with *projecting the data*. (Think of putting a light source in the middle of your sphere and projecting its surface onto a wall...). Various methods of projecting data exist, each tailored to minimize distortion of a particular type (area|distance|shape|direction) and location.
+
+Projecting data involves a lot of math, but there are equations for that. Still, what further complicates the matter is point 2 above: the earth is not a perfect sphere, but rather an ellipsoid and an irregular one at that. Over time, people have devised various models to depict the true flattened shape of the earth. These are called **spheroids** (or sometimes **ellipses**). And on top of that, people have devised additional models to incorporate local deviations from these spheroid models. These are called **datums**. 
+
+##### For more info on coordinate systems/projections:
+* Great video on projections: [link](https://www.youtube.com/watch?v=kIID5FDi2JQ)
+* Nice overview of coordinate systems  [link](https://www.nceas.ucsb.edu/~frazier/RSpatialGuides/OverviewCoordinateReferenceSystems.pdf)
+* Some comic relief from xkcd! [link](https://xkcd.com/977/)
+* Visualizing all the different projections [link](https://map-projections.net/singleview.php)
+
+The bottom line is that we have numerous different coordinate reference systems. We have *geographic coordinate systems (GCS)* in which coordinates remain in geographic (or angular) units, and *projected coordinate systems (PCS)* in which coordinates are in planar units. Both GCS and PCS require a defined *spheorid* and *datum* for depicting the shape of the earth. And PCS additionally require information on how the surface of this sphere is projected onto a plane and the location of the origin of the coordinate system. Which CRS to choose depends on the location and extent of your study, and whether is most important to maintain correct areas, shapes, distances, or directions. 
+
+Coordinate reference systems can indeed be confusing, but they are "a necessary evil" as they allow us to combine spatial datasets from various sources as long as we can successfully translate our data from one CRS to another. Fortunately, R and other geospatial tools are there to help us with that; we just have to keep our accounting straight. 
+
+##### EPSG codes and "PROJ4Strings"
+The website http://spatialreference.org/ lists hundreds of standard CRS along with a map and description of where it's appropriate. For example, a useful one in North Carolina is [UTM Zone 17N-NAD 83](http://spatialreference.org/ref/epsg/nad83-utm-zone-17n/). Note also that it's *EPSG code* is `26917`; this EPSG code one way we can assign a CRS to our data. If you click on the the "Well Known Text as HTML" link, it will reveal all the specific associated with that CRS... (Another site listing coordinate reference systems is http://www.epsg.org/)
+
+Some CRS, however, do not have an associated EPSG code, and for those, we can use the "proj4string", which is a long hand form of the projection information. Just to make it more confusing, some coordinate systems have a "WKT" or "Well known text" code.Mostly, these are all interchangeable and the important bit here is that you understand the need for and requirements of associating a CRS with a spatial dataset. I found this site gives a useful overview of the nuances of coordinate systems: https://bit.ly/2XUGMyX 
+
+
+```{r Explore the CRS of our dataset}
+#Recall what the CRS is of our EPA dataset
+st_crs(EPAair_PM_avg_sf)
+```
+
+Now look that EPSG up on http://spatialreference.org. 
+* What coordinate system this EPSG is associated with?
+* What is the extent of this projection? 
+* Is this a geographic or projected coordinate system? 
+* What Datum does it use? 
+
+
+## SPATIAL ANALYSIS, Second attempt
+Applying our knowledge of CRS, let's transform our EPA sites from its native geographic coordinate system to a projected one, namely UTM Zone 17N and repeat what we attempted earlier. Then we'll revisit the buffer. 
+
+```{r Transform our data to UTM 17 and buffer it}
+#Transform the entire EPA dataset to the UTM Zone 17N crs
+EPAair_PM_avg_sf_UTM <- st_transform(EPAair_PM_avg_sf, crs=26917)
+
+#Rebuffer the Durham Armory site. Is it now circular? 
+DA_UTM_buffer <- EPAair_PM_avg_sf_UTM %>% 
+  filter(Site.Name == 'Durham Armory') %>%     # Filter for the Durham Armory Site
+  st_buffer(2000)                              # Buffer 2000 meters
+
+plot(DA_UTM_buffer$geometry,
+     graticule = st_crs(4326),           #Add a graticule
+     axes=TRUE)                                   #Add axes
+
+```
+
+As we are now in a planar coordinate system, we can do some more spatial analysis... We'll examine one quick one - a distance analysis - as a quick preview, then more later after we add some other datasets...
+```{r Distance analysis} 
+#Compute the distance between the Durham Armory site and all other sites
+Distances_to_DASite <- EPAair_PM_avg_sf_UTM %>% 
+  filter(Site.Name == 'Durham Armory') %>%    #Subset the Durham Armory site
+  st_distance(EPAair_PM_avg_sf_UTM) %>%       #Compute distances to all other sites
+  data.frame() %>%  t                         #Transpose the result
+
+#Add new field of distances to Durham Armory site
+EPAair_PM_avg_sf <- mutate(EPAair_PM_avg_sf,Dist2DA = Distances_to_DASite)
+
+#Plot to see that it worked: larger = further?
+ggplot() + 
+  geom_sf(data=EPAair_PM_avg_sf,aes(size=Dist2DA)) 
+```
+
+
+---
+# 2. WORKING WITH SPATIAL DATA
+Now that we have a feel for how vector spatial data are stored, let's dive deeper into what types of spatial analyses we can do. 
+* Reading shapefiles into R with `sf` (and selecting with `filter`)
+* Spatial aggregation with `group_by` and `summarize` or `st_union`
+* Visualizing multiple datasets
+* Changing CRS with `transform`
+* Attribute joins with `merge`
+* Spatial joins
+* Geometry manipulations
+ * Buffer
+ * Convex hulls
+ * Voronoi polygons
+* Select polygon by location (buffer and intersect)
+ 
+
+## Reading shapefiles into R with `sf`
+The `sf` package also allows us to read many existing data formats, including ArcGIS ShapeFiles. I've added a few shapefiles to our Data folder, one of all US counties and another of 8-digit hydrologic Unit codes (HUCs) for NC....
+
+Below we read in the USA counties shapefile, filtering for just the NC features (NC has a state FIPS code of 37...) 
+```{r read the USA county shapfile, subsetting for NC}
+counties_sf<- st_read('./Data/Spatial/cb_2017_us_county_20m.shp') %>% 
+  filter(STATEFP == 37) #Filter for just NC Counties
+
+#CRS (Is this the same as the EPA Dataset?)
+st_crs(counties_sf)
+
+#Column names
+names(counties_sf)
+
+#Reveal the number of features in this dataset
+nrow(counties_sf)
+
+#Reveal the extent of this dataset via the st_bbox() function
+st_bbox(counties_sf)
+
+#View the data
+head(counties_sf)
+
+#Plot the data
+plot(counties_sf['ALAND'],
+     graticule = st_crs(counties_sf),
+     axes=TRUE)
+```
+
+
+> _Now you try_: Read in the NC 8-Digit HUC dataset: './Data/Spatial/huc_250k_nc.shp'. What CRS does this dataset use? Is it the same as the counties dataset? What columns are included in this dataset?
+
+```{r read HUCs shapefile}
+#Read the shapefile into an sf dataframe named "huc8_sf"
+huc8_sf <-   
+
+#Check the CRS
+
+
+#Exaimine the column names
+
+
+#View the data as a map
+
+```
+
+> _Challenge_: Read in the NC 8-Digit HUC dataset again, but this time _filter_ the data so the result only includes the one with a HUC_NAME value of 'Upper Neuse'.
+
+```{r Select the Upper Neuse HUC 8}
+#Read the shapefile into an sf dataframe
+upperNeuse_sf <-  
+  
+
+```
+
+
+## Spatial data aggregation with group_by and summarize
+```{r Dissolve all counties into a single feature}
+#Aggregate the data using group_by and summarize, just as you would a non-spatial dataframe
+state_sf <- counties_sf %>% 
+  group_by('STATEFP') %>% 
+  summarize(ALAND = sum(ALAND))
+
+#View the data
+plot(state_sf$geometry,
+     col='blue',
+     graticule = st_crs(state_sf),
+     axes=TRUE)
+
+#Alternatively, we could use the `st_union` function
+state_sf2 <- st_union(counties_sf)
+plot(state_sf2,
+     col='lightblue',
+     graticule = st_crs(state_sf),
+     axes=TRUE)
+```
+
+> Now you try it: Aggregate the HUC data on the SUB attribute, computing the sum of the "AREA" field and view the result. 
+
+```{r Aggregate the HUC data on an attribute, saving as huc2_sf}
+huc2_sf <- 
+  
+  
+mapview(huc2_sf)
+```
+
+
+
+## Transforming coordinate reference systems of datasets
+When dealing with multiple datasets, it's best to get them all using the same CRS. This can be done with the `st_transform` command, supplying the EPSG code of the CRS that you want your data to be in. Currently we have 5 spatial datasets going. Let's get those all into a consistent CRS. 
+
+```{r Transform the datasets to other coordinate reference systems}
+#Convert all to UTM Zone 17 (crs = 26917)
+# EPAair_PM_avg_sf_utm is already in UTM 
+counties_sf_utm <- st_transform(counties_sf, c=26917)
+state_sf_utm <- st_transform(state_sf,c=26917)
+huc8s_sf_utm <- st_transform(huc8_sf, c=26917)
+huc2_utm = st_transform(huc2_sf, c=26917)
+
+# Convert all to WGS84 (crs=4326)
+EPAair_wgs84 <- st_transform(EPAair_PM_avg_sf, c=4326)
+counties_WGS84 <- st_transform(counties_sf_utm, c=4326)
+state_WGS84 <- st_transform(state_sf,c=4326)
+huc8s_WGS84 <- st_transform(huc8_sf,c=4326)
+huc2_WGS84<- st_transform(huc2_sf,c=4326)
+
+#Now plot with leaflet: no errors as all layers are in Leaflet's native CRS (WGS84)
+leaflet() %>% addTiles() %>% 
+  addPolygons(data=counties_WGS84,weight=1,color='red') %>% 
+  addPolygons(data=huc8s_WGS84,weight=1)
+```
+
+
+
+## Visualizing multiple datasets
+You can plot multiple spatial datasets just as we've done with tabular datasets. With spatial data, however, the order of the data you plot is important...
+
+### ggplot
+```{r Vsualizing mulitple dataset with ggplot}
+#Wrong order
+ggplot()  +
+  geom_sf(data = EPAair_PM_avg_sf_UTM, color='white', size=2) +
+  geom_sf(data = counties_sf_utm, aes(fill = ALAND), color = 'white')  +
+  geom_sf(data = state_sf_utm, color='red',size=2) + 
+  scale_fill_gradient(low="yellow", high="darkgreen")
+
+#Right order
+ggplot() +
+  geom_sf(data = state_sf_utm, color='red',size=2) +
+  geom_sf(data = counties_sf_utm, aes(fill = ALAND), color = 'white')  +
+  geom_sf(data = EPAair_PM_avg_sf_UTM, color='blue', size=2) + 
+  scale_fill_gradient(low="yellow", high="darkgreen")
+```
+
+### leaflet
+Tip: See http://leaflet-extras.github.io/leaflet-providers/ for other basemaps
+```{r Visualizing multiple datasets with leaflet}
+leaflet() %>% 
+  addProviderTiles(providers$Esri.WorldShadedRelief) %>%  
+  addPolygons(data = counties_WGS84, color = "orange", weight = 1, smoothFactor = 0.5,   
+              opacity = 1.0, fillOpacity = 0.5,
+              fillColor = ~colorQuantile("YlGnBu", ALAND)(ALAND)) %>% 
+  addPolygons(data = huc2_WGS84, color=NA, weight = 2) %>% 
+  addMarkers(data=EPAair_wgs84,popup = ~as.character(`Site.Name`))
+
+```
+
+### leaflet - linked and synced plots
+```{r Visualizing multiple datasets with leaflet: linked and synced maps}
+m1 <- leaflet() %>% 
+  addTiles() %>%  
+  addPolygons(data = counties_WGS84, color = "orange", weight = 1, smoothFactor = 0.5,   
+              opacity = 1.0, fillOpacity = 0.5,
+              fillColor = ~colorQuantile("YlOrRd", ALAND)(ALAND)) %>% 
+  addMarkers(data=EPAair_wgs84,popup = ~as.character(`Site.Name`))
+
+
+m2 <- leaflet() %>% 
+  addProviderTiles(providers$Stamen.TonerHybrid) %>% 
+  addPolygons(data = huc8s_WGS84,weight=0.2,color='red') %>% 
+  addCircleMarkers(data=EPAair_wgs84,
+                   radius=(~meanPM*2),
+                   stroke = FALSE, 
+                   fillOpacity = 0.3,
+                   popup = ~as.character(`Site.Name`))
+latticeview(m1, m2)
+sync(m1,m2)
+```
+
+
+
+
+## Clipping and intersecting data
+```{r}
+#Clip the HUC2 data set by the NC State boundary dataset
+huc2_UTM_nc <- st_intersection(huc2_utm,state_sf_utm)
+plot(huc2_UTM_nc$geometry)
+```
+
+> Exercise: Try subsetting the huc2_UTM dataset for SUB = 0302, then clipping counties with that subset.
+
+```{r EXERCISE: Clip the counties dataset with the border of HUC 0302}
+huc0302_counties <- 
+  
+#Map the product, showing values by land area
+plot(huc0302_counties['ALAND'])
+```
+
+
+## Attribute joins with `merge`
+To add more attributes to our spatial features, we can merge records just as we do with non-spatial dataframes, i.e. with the `merge` command. Here we will read in a table of county census data an join them to our counties_sf data set.
+
+```{r Join demographic data to county features}
+#Read in the demographic data
+demog_df <- read.csv('./Data/Spatial/NC_Demography.csv') %>% 
+  mutate(FIPS = as.factor(FIPS))                                 #Convert the FIPS variable to a factor
+
+#Join the two datasets using "GEOID" from the left dataset and "FIPS" from the right
+counties_sf_utm_join <- counties_sf_utm %>% 
+  left_join(y = demog_df,by = c("GEOID" =  "FIPS"))
+
+#Check the dimensions
+dim(counties_sf_utm)
+dim(demog_df)
+dim(counties_sf_utm_join)
+
+#Plot counties with a new variable
+ggplot() + 
+  geom_sf(data = counties_sf_utm_join, aes(fill=BIR74)) +
+  scale_fill_gradient("BIR74",low='white',high='darkblue')
+
+#Or with mapview
+plot(counties_sf_utm_join['BIR74'])
+```
+
+## Geometry manipulations
+We can also manipulate the geometries in interesting ways. The `sf` cheat sheet is handy for exploring: https://github.com/rstudio/cheatsheets/raw/master/sf.pdf 
+
+```{r}
+#Select the triangle counties into a new sf data frame
+triCo <- counties_sf_utm %>% 
+  filter(NAME %in% c("Durham","Wake", "Orange", "Chatham")) 
+
+#Plot
+myMap = ggplot() + 
+  geom_sf(data = triCo)
+myMap
+
+#Compute the centroids and show them
+triCo_centroids <-  st_centroid(triCo)
+myMap <- myMap + geom_sf(data = triCo_centroids, color = 'blue')
+myMap
+
+#Buffer the centroids outward 2km and add them to our
+triCo_centroids_2km <- st_buffer(triCo_centroids, 2000)
+myMap <- myMap + geom_sf(data = triCo_centroids_2km, color = 'orange', fill=NA)
+myMap
+
+#Buffer the counties inward 2km
+triCo_in2km <- st_buffer(triCo, -2000)
+myMap <- myMap + geom_sf(data = triCo_in2km, color = 'green', fill=NA)
+myMap
+
+#Combine the centroids into one featue and construct a convex hull around them
+triCo_centroids_chull <- triCo_centroids %>% 
+  st_union() %>% 
+  st_convex_hull()
+myMap <- myMap + geom_sf(data = triCo_centroids_chull, color = 'red', fill=NA)
+myMap
+
+#Combine the centroids into one feature and draw voronoi polygons
+triCo_centroids_voronoi <- triCo_centroids %>% 
+  st_union() %>% 
+  st_voronoi()
+myMap <- myMap + geom_sf(data = triCo_centroids_voronoi, color = 'purple', fill=NA)
+myMap
+
+```
+
+## Spatial selection
+```{r Select the county in which user provided lat/long pair is found}
+#User coordinates
+userLat = 36.0045442
+userLng = -78.9426381
+
+#Create a simple features point geometry from the point
+theSite_sfp <- st_point(c(userLng,userLat))
+
+#Create a simple features column from the point geometry object
+theSite_sfc <- st_sfc(theSite_sfp, crs = 4326)
+
+#Transform the mask to match the CRS of the counties dataset
+theSite_sfc_transformed <- st_transform(theSite_sfc, crs = st_crs(counties_sf_utm))
+
+#Create a boolean mask 
+resultMask <- st_intersects(counties_sf_utm, 
+                            theSite_sfc_transformed,
+                            sparse = FALSE) #The `sparse` option returns a Boolean mask
+
+#Filter the counties dataset using the boolean mask
+selCounties <- counties_sf_utm[resultMask,]
+
+#Map the results
+plot(counties_sf[resultMask,]@geometry)
+
+```
+> Questions: how might we use the `st_buffer` function to show all counties within 30km of the site?
+
+```{r Select counties within a 30 km area from the site}
+
+                            
+```
+
+
+
