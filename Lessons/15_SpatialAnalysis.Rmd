@@ -65,7 +65,7 @@ EPAair_PM_avg <- EPAair_PM25_NC2018_raw %>%
 
 #Plot the data using longitude and latitude as X and Y
 ggplot(EPAair_PM_avg, aes(x=SITE_LONGITUDE, y=SITE_LATITUDE)) + 
-  geom_point(aes(color=meanPM), size=4) #+ coord_equal() 
+  geom_point(aes(color=meanPM), size=4) + coord_equal() 
 ```
 
 This is more of a proof of concept than a useful map. We can sort of visualize spatial patterns in the data, but without context of scale or location, it's somewhat difficult. We can greatly improve this map with the help of some mapping packages for R...
@@ -316,24 +316,25 @@ mapView(counties_sf)
 
 ```{r read HUCs shapefile}
 #Read the shapefile into an sf dataframe named "huc8_sf"
-huc8_sf <-   
+huc8_sf <- st_read("./Data/Spatial/huc_250k_nc.shp")
 
 #Check the CRS
-
+st_crs(huc8_sf)
 
 #Exaimine the column names
-
+names(huc8_sf)
 
 #View the data as a map
-
+plot(huc8_sf["SUB"],graticule=st_crs(4326),axes = T)
 ```
 
 > _Challenge_: Read in the NC 8-Digit HUC dataset again, but this time _filter_ the data so the result only includes the one with a HUC_NAME value of 'Upper Neuse'.
 
 ```{r Select the Upper Neuse HUC 8}
 #Read the shapefile into an sf dataframe
-upperNeuse_sf <-  
-  
+upperNeuse_sf <-  st_read("./Data/Spatial/huc_250k_nc.shp") %>%
+  filter(HUC_NAME=="Upper Neuse")
+mapview(upperNeuse_sf)  
 
 ```
 
@@ -356,8 +357,9 @@ mapview(state_sf2)
 > Now you try it: Aggregate the HUC data on the SUB attribute, computing the sum of the "AREA" field and view the result. 
 
 ```{r Aggregate the HUC data on an attribute, saving as huc2_sf}
-huc2_sf <- 
-  
+huc2_sf <- huc8_sf %>%
+  group_by(SUB) %>%
+  summarise(AREA=sum(AREA))
   
 mapview(huc2_sf)
 ```
@@ -458,10 +460,13 @@ mapview(huc2_UTM_nc)
 > Exercise: Try subsetting the huc2_UTM dataset for SUB = 0302, then clipping counties with that subset.
 
 ```{r EXERCISE: Clip the counties dataset with the border of HUC 0302}
-huc0302_counties <- 
-  
+huc0302 <- huc2_utm %>%
+  filter(SUB=="0302")
+
+huc0302_counties <- st_intersection(counties_sf_utm,huc0302)
+
 #Map the product, showing values by land area
-mapview(huc0302_counties['ALAND'])
+mapview(huc0302_counties['ALAND'],legend=F)
 ```
 
 
