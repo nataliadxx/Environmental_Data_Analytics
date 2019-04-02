@@ -1,0 +1,168 @@
+---
+title: "18a_DataExtractionExamples"
+author: "John Fay"
+date: "March 28, 2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r Prep the workspace}
+library(tidyverse)
+library(sf)
+library(raster)
+```
+
+# The `tidycensus` package
+```{r Fetch Census Data using tidycensus}
+#install.packages('tidycensus')
+library(tidycensus)
+
+#Sign up for a key and enter it here
+census_api_key('d4ad7874c996c7a83fec0a81466309ddc07d8e22') 
+
+#Extract population for NC Counties
+nc_pop <- 
+  get_acs(geography = "county",                          # Level at which to extract data
+          variables = c("B01003_001","B17001B_001"),     # Census variables to include
+          state = "NC",                                  # State to include
+          geometry = TRUE) %>%                           # Whether or not to include geometries
+  dplyr::select(-moe) %>%                                       # Remove the mean of error column
+  spread(key=variable,value=estimate) %>%                # Put the extracted variables into columns
+  rename(TOTAL.POP = B01003_001) %>%                     # Rename the columns to something less cryptic...  
+  rename(POVERTY.POP = B17001B_001)
+
+ggplot(nc_pop) +
+  geom_sf(aes(fill = TOTAL.POP)) +
+  scale_fill_distiller("Population",palette = 'YlGnBu')
+```
+
+```{r Fetch }
+#install.packages('FedData')
+library(FedData)
+
+#Extract Durham Co polygon from our county dataset retreived above
+durham_co <- nc_pop2 %>% filter(GEOID == '37063')
+
+#Extract NLCD land cover (2011)
+#Fetch the data
+nlcd2011 <- get_nlcd(template = durham_co,                #Template specifies the extent to fetch
+                     label='tri',                         #Sets a label for the output
+                     year=2011,                           #The year of the land cover dataset to fetch
+                     dataset='landcover',                 #The dataset to fetch
+                     raw.dir='./Data/Spatial/tmpNLCD',    #Where to fetch the tiles (creates this folder)
+                     extraction.dir = './Data/Spatial')   #Where to store the merged tiles (final result)
+
+#Show the data
+plot(nlcd2011)
+
+#Transform the county polygon to match the crs of the raster data
+crs_NLCD <- crs(nlcd2011,asText=TRUE)
+durham_co_prj <- st_transform(durham_co$geometry,crs = crs_NLCD)
+plot(durham_co_prj,add=TRUE,lwd=2)
+
+#Uncomment to remove all temporary tiles
+unlink('./Data/Spatial/tmpNLCD',recursive = TRUE)
+```
+
+# The `dataRetrieval` package
+We will use the USGS packages to download data directly from the USGS. To do this we need to identify what we want to download. We need to define:
+
+* `siteNumbers` - this is the USGS gauge containing the data we want to download
+    + We will define the variable siteNo and assign it to Clayton gauge: `02087500`
+        + `siteNo <- '02087500'`
+* `parametercd` -  this is the parameter code... what we want to download from the gauge.
+    + Parameter codes can be found here: https://help.waterdata.usgs.gov/code/parameter_cd_query?fmt=rdb&inline=true&group_cd=%
+    + We will define the variable `pcode` and set it equal to `'00060'` which is the code for discharge.
+        + `pcode = '00060'`
+* `statCd` is the statistical code for daily values. We are interested in the mean.
+    + Statistical codes can be found here:  https://help.waterdata.usgs.gov/code/stat_cd_nm_query?stat_nm_cd=%25&fmt=html
+    + We will define the variable `scode` and set it equal to `'00003'`
+        + `scode = '00003'`
+* We also can identify the start and the end date. In this case we will define the following:
+    + `start.date = "1930-10-01"`
++ `end.date = "2017-09-30"`
+
+```{r Get Water Data using the dataRetrieval package}
+#install.packages('dataRetrieval')
+library(dataRetrieval)
+
+#Identify gauge to download
+siteNo <- '02087500' #Clayton, don't forget to add the zero if it is missing
+
+#Identify parameter of interest: https://help.waterdata.usgs.gov/code/parameter_cd_query?fmt=rdb&inline=true&group_cd=%
+pcode = '00060' #discharge (cfs)
+
+#Identify statistic code for daily values: https://help.waterdata.usgs.gov/code/stat_cd_nm_query?stat_nm_cd=%25&fmt=html
+scode = "00003"  #mean
+
+#Identify start and end dates
+start.date = "1930-10-01"
+end.date = "2017-09-30"
+
+#pick service
+serv <- "dv"
+
+#Load in data using the site ID
+neuse <- readNWISdata(siteNumbers = siteNo, 
+                      parameterCd = pcode, 
+                      statCd = scode, 
+                      startDate=start.date, 
+                      endDate=end.date, 
+                      service = serv)
+
+summary(neuse); dim(neuse)
+
+```
+
+
+#Fetch NWIS Sites for Nebraska
+```{r}
+library(tidyverse)
+library(lubridate)
+
+
+#Fetch  and write the site info
+siteInfo <- read.table('https://waterdata.usgs.gov/nwis/inventory?state_cd=ne&data_type=rt&data_type=peak&group_key=NONE&format=sitefile_output&sitefile_output_format=rdb&column_name=site_no&column_name=station_nm&column_name=site_tp_cd&column_name=dec_lat_va&column_name=dec_long_va&list_of_search_criteria=state_cd%2Cdata_type',
+                       skip=26,           #Skip the first 26 rows
+                       header = TRUE,     #Include the header row                  
+                       sep='\t') %>%      #Set the separator as <tab>
+  slice(-1)                               #Omit the data type row 
+
+#Write the result to a file
+write.csv(siteInfo, file = './Data/Raw/NWIS_SiteInfo_NE_RAW.csv', row.names = FALSE)
+
+
+#Fetch and write the site flow data
+siteData <- read.table('https://waterdata.usgs.gov/ne/nwis/current?index_pmcode_STATION_NM=1&index_pmcode_DATETIME=2&index_pmcode_00065=3&index_pmcode_00060=4&sitefile_output_format=html_table&column_name=site_no&column_name=station_nm&sort_key_2=site_no&format=rdb&rdb_compression=value&list_of_search_criteria=realtime_parameter_selection', 
+                       skip=30,           #Skip the first 30 rows
+                       header = TRUE,     #Include the header row                  
+                       sep='\t') %>%      #Set the separator as <tab>
+  slice(-1) %>%                                               #Omit the data type row 
+  mutate(result_va = as.numeric(as.character(result_va))) %>% #Force data to be numeric (NAs for other)
+  filter(parameter_cd == '00065') %>%  #Gage height           #Select only gage height data
+  select(site_no,station_nm,result_dt,result_va) %>%          #Subset columns
+  rename(date = result_dt) %>%                                #Rename date column
+  rename(gage_ht = result_va) %>%                             #Rename gage height column
+  drop_na()                                                   #Drop rows with missing data
+
+#Write the data
+write_csv(siteData,paste0(getwd(),'/Data/Raw/NWIS_SiteFlowData_NE_RAW.csv'))
+
+#Join the tables (DISABLED)
+#siteAll <- inner_join(siteData, siteInfo)
+#write.csv(siteAll,'./Data/Spatial/NE_FlowData.csv',row.names = FALSE)
+
+```
+
+# ArcGIS REST services
+https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/4
+```{r}
+#HUCS - Geographic Coordinate System
+huc_sf <- st_read('https://hydro.nationalmap.gov/arcgis/rest/services/wbd/MapServer/4/query?where=STATES+%3D+%27NE%27&text=&objectIds=&time=&geometry=&geometryType=esriGeometryEnvelope&inSR=&spatialRel=esriSpatialRelIntersects&relationParam=&outFields=&returnGeometry=true&returnTrueCurves=false&maxAllowableOffset=&geometryPrecision=&outSR=&having=&returnIdsOnly=false&returnCountOnly=false&orderByFields=&groupByFieldsForStatistics=&outStatistics=&returnZ=false&returnM=false&gdbVersion=&historicMoment=&returnDistinctValues=false&resultOffset=&resultRecordCount=&queryByDistance=&returnExtentOnly=false&datumTransformation=&parameterValues=&rangeValues=&quantizationParameters=&f=geojson')
+
+st_write(huc_sf,'./Data/Spatial/NE_HUC8s.shp')
+
+
+```
+
