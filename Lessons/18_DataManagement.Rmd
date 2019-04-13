@@ -103,11 +103,11 @@ url <- "https://en.wikipedia.org/wiki/List_of_rivers_by_length"
 webpage <- read_html(url)
 
 # Grab specific components of the website
-Name = webpage %>% html_nodes("td:nth-child(2)") %>% html_text()
-Length.km = webpage %>% html_nodes("td:nth-child(3)") %>% html_text()
-DrainageArea.km2 = webpage %>% html_nodes("td:nth-child(5)") %>% html_text()
-Discharge.m3s = webpage %>% html_nodes("td:nth-child(6)") %>% html_text()
-Outflow = webpage %>% html_nodes("td:nth-child(7)") %>% html_text()
+Name <- webpage %>% html_nodes("td:nth-child(2)") %>% html_text()
+Length.km <- webpage %>% html_nodes("td:nth-child(3)") %>% html_text()
+DrainageArea.km2 <- webpage %>% html_nodes("td:nth-child(5)") %>% html_text()
+Discharge.m3s <- webpage %>% html_nodes("td:nth-child(6)") %>% html_text()
+Outflow <- webpage %>% html_nodes("td:nth-child(7)") %>% html_text()
 
 # Coerce into a data frame, ensure consistent lengths
 riverdata <- data_frame(Name = Name[7:189], 
