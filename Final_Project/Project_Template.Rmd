@@ -5,12 +5,14 @@ output:
     fig_caption: yes
     number_sections: yes
 geometry: margin=2.54cm
-title: Experiment Title
-subtitle: Web address for GitHub repository
-author: Your Name
-abstract: "Experimental overview. This section should be no longer than 250 words."
+title: Linguistic Diversity in China and Influencing Environmental Factors
+subtitle: https://github.com/nataliadxx/Environmental_Data_Analytics/tree/master/Final_Project
+author: Xin Wang
+abstract: "This project aims to explore the pattern of linguistic diversity in China and potential influence of environmental factors. With a dataset derived from multiple sources, spatial visualization is realized, and multiple linear regression models are built. The clear pattern is that linguistic diversity is high Southwestern, Northwestern, Northeastern China and Taiwan, which accords with regions that minor ethnic groups inhabit. Yunnan Province produces the highest diversity. Results of linear regression models show that the heterogeneity of topography is the main environmental factor that facilitates the pattern of linguistic diversity in China. Transportation efficiency, in contrast, may lead to uniformity. Climatic variables have little influence on linguistic diversity."
 fontsize: 12pt
 mainfont: Times New Roman
+editor_options: 
+  chunk_output_type: console
 ---
 
 <Information in these brackets are used for annotating the RMarkdown file. They will not appear in the final version of the PDF document>
@@ -18,60 +20,157 @@ mainfont: Times New Roman
 \newpage
 \tableofcontents 
 \newpage
-\listoftables 
-\newpage
 \listoffigures 
 \newpage
 
 <Setup the global options for the R chunks in your document>
 
-<Note: set up autoreferencing for figures and tables in your document>
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
 # Set your working directory
-
+setwd("Y:/19spring/872/Environmental_Data_Analytics/Final_Project")
 # Load your packages
-
+library(tidyverse)
+library(mapview)
+library(sf)
 # Set your ggplot theme
-
+wang <- theme_classic() +
+  theme(plot.title=element_text(size = 18,hjust = 0.5),
+        panel.background=element_rect(fill="white",color="grey30"),
+        axis.title = element_text(size = 15),
+        legend.title = element_text(size = 15), legend.text = element_text(size = 12),
+        legend.margin=margin(6,6,6,6))
+theme_set(wang)
 ```
 
 
 # Research Question and Rationale
 
-<Paragraph detailing the rationale for your analysis. What is the significant application and/or interest in this topic? Connect to environmental topic(s)/challenge(s).>
+Languages are the production and reflection of human cultures. The mechanisms of the formation of linguistic diversity or cultural diversity have been discussed theoretically and empirically since 1990s. Several explanations have been proposed by environmenal anthropologists on the relationship between languages and the environment. The analysis of this project is going to study whether environmental factors possibly exert influence on language diversity in China, a country with over 50 nationalities, to testify some hypotheses.
 
-<Paragraph detailing your research question(s) and goals. What do you want to find out? Include a sentence (or a few) on the dataset you are using to answer this question - just enough to give your reader an idea of where you are going with the analysis.>
+Specifically, my research goals are:
+1. Describe the spatial pattern of linguistic diversity in China.
+2. Test the influence of environmental variables on linguistic diversity.
+The dataset includes information on language richness distribution and environmental variables.
 
 \newpage
 
 # Dataset Information
 
-<Information on how the dataset for this analysis were collected, the data contained in the dataset, and any important pieces of information that are relevant to your analyses. This section should contain much of same information as the README file for the dataset but formatted in a way that is more narrative.>
+Language richness data was collected from a linguistic monograph "Languages in China" (Sun et al. 2007). Climatic data was derived from WorldClim (http://www.worldclim.org/). Topography indices were calculated with SRTM digital elevation model (DEM) (http://datamirror.csdb.cn/). Other environmental data came from National Geomatics Center of China (http://www.ngcc.cn/). 
 
-<Add a table that summarizes your data structure. This table can be made in markdown text or inserted as a `kable` function in an R chunk. If the latter, do not include the code used to generate your table.>
+The year of all variables is 2000. Variables are calculated in 50km*50km grids.
+
+Besides total richness of languages, the richness of each language family and endemic languages are also listed here. Climatic indices include mean annual temperature (MAT), minimum temperature of the coldest month(mTCM), annual range of temperature (ART) and precipitation seasonality (PSN). Among them, MAT and mTCM are indicators of overall energy and productivity available, while ART and PSN represent the climate variability. The zonal range of elevation inside each grid is used as an index of topographical roughness. Other variables considered are land cover types and river length, which is an indicator of transportation efficiency.
+
+The structure of the dataset is simplified as below.
+
+Spatial coordinate | Climate | Topography | Language richness | River length | Habitat richness
+------------------ | ------- | ---------- | ----------------- | ------------ | ----------------
+                   |         |            |                   |              |                  
+
 
 \newpage
 
 # Exploratory Data Analysis and Wrangling
 
 <Include R chunks for 5+ lines of summary code (display code and output), 3+ exploratory graphs (display graphs only), and any wrangling you do to your dataset(s).> 
+```{r,warning=FALSE}
+dat <- read.csv("China_language_data.csv")
+colnames(dat)
+dim(dat)
+head(dat)
+summary(dat$languages)
+summary(dat$Sino.Tibetan)
+summary(dat$Altaic)
+summary(dat$Austronesian)
+summary(dat$Austroasiatic)
+shapiro.test(dat$MAT)
+shapiro.test(dat$mTCM)
+shapiro.test(dat$TOPO)
+```
 
-<Include text sections to accompany these R chunks to explain the reasoning behind your workflow, and the rationale for your approach.>
+```{r, echo=FALSE, message=FALSE, fig.cap="Distribution of language richness in each grid"}
+ggplot(dat,aes(x=languages)) +
+  geom_histogram() +
+  labs(x="Language richness", y="Count")
+```
+
+```{r, echo=FALSE, message=FALSE, fig.cap="Distribution of endemic language richness in each grid"}
+ggplot(dat,aes(x=endemic.languages)) +
+  geom_histogram() +
+  labs(x="Language richness", y="Count")
+```
+
+```{r, echo=FALSE, message=FALSE, fig.cap="Spatial range of the data"}
+ggplot(dat,aes(x=longi,y=lati)) +
+  geom_point(aes(color=languages),size=3)
+```
+
+The goal of previous exploration steps is to get a sketchy idea of the data. There are totally 3688 grids in the dataset. There are less than 4 languages in most area, but where languages are most diverse, there can be up to 16 languages in a 50km??50km range. In terms of language families, Sino-Tibetan and Altaic languages seem to be far more than Austronesian and Austroasiatic. Most grids do not have endemic language within it, but the most diverse one possesses 12 endemic languages. The location of the points is shown on a map.
 
 
 \newpage
 
 # Analysis
 <Include R chunks for 3+ statistical tests (display code and output) and 3+ final visualization graphs (display graphs only).>
+```{r}
+model1 <- lm(data = dat, languages ~ MAT+mTCM)
+summary(model1)
+model2 <- lm(data = dat, languages ~ ART+PSN)
+summary(model2)
+model3 <- lm(data = dat, languages ~ TOPO+veg_rich)
+summary(model3)
+model4 <- lm(data = dat, languages ~ river_all)
+summary(model4)
+```
 
-<Include text sections to accompany these R chunks to explain the reasoning behind your workflow, rationale for your approach, and the justification of meeting or failing to meet assumptions of tests.>
+```{r,echo=FALSE,fig.cap="Spatial distribution of linguistic diversity in China"}
+dat.sf <- st_as_sf(dat,coords = c("longi","lati"),crs="+proj=aea +lat_1=25 +lat_2=47 +lat_0=30 +lon_0=105 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs")
+ggplot() +
+  geom_sf(data = dat.sf,aes(color=languages),size=2) +
+  scale_color_distiller("Language richness",palette = "GnBu") +
+  theme(legend.position = "bottom")
+```
+
+```{r,echo=FALSE,fig.cap="Spatial distribution of Sino-Tibetan languages"}
+ggplot() + 
+  geom_sf(data = dat.sf,aes(color=Sino.Tibetan),size=2) +
+  scale_color_distiller("Language richness",palette = "GnBu") +
+  theme(legend.position = "bottom")
+```
+
+```{r, echo=FALSE,fig.cap="Spatial distribution of Altaic languages"}
+ggplot() +
+  geom_sf(data = dat.sf,aes(color=Altaic),size=2) +
+  scale_color_distiller("Language richness",palette = "GnBu") +
+  theme(legend.position = "bottom")
+```
+
+```{r,echo=FALSE,fig.cap="Language richness to topographic roughness"}
+ggplot(dat,aes(x=TOPO,y=languages)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(x="Range of altitude (m)",y="Language richness") +
+  annotate("text",x=5000,y=15,label="p<2e-16, R-squared=0.15",color="blue")
+```
+
+Shapiro-Wilk normality tests in previous steps indicate that many environmental variables do not approximate normal distributions. However, since the dataset is large (over 3k observations), linear regression will still be adopted.
+
+In this case, environmental variables and language richness, the responsive variable, are all continuos. Therefore, 4 multiple and single linear regression models are used to test the following hypotheses.
+1. Areas with high energy and productivity develop more languages, which is analogous to biodiversity. MAT and mTCM are explanatory variables.
+2. Areas with high climatic variability tend to have less languages because communities may ally to resist variability. ART and PSN are explanatory variables.
+3. High habitat heterogeneity tend to develop more languages. Topograhic roughness and habitat richness are explanatory variables.
+4. Areas with efficient transportation are likely to have less languages as there is more frequent communication between communities. River length is the explanatory variable.
 
 
 \newpage
 
 # Summary and Conclusions
-<Summarize your major findings from your analyses. What conclusions do you draw from your findings? Make sure to apply this to a broader application for the research question you have answered.>
+<Summarize your major findings from your analyses. What conclusions do you draw from your findings? 
+Make sure to apply this to a broader application for the research question you have answered.>
+From the maps, the spatial pattern of linguistic diversity is perceivable. Overall, linguistic diversity is low in southeastern, central and northern China, while in southwestern, northwestern, northeastern China and Taiwan, the diversity appears relatively high. Yunnan Province, in the very southwestern corner, produces the highest diversity. Specifically, the hotspot of Sino-Tibetan languages is the southwestern part, while Altaic languages are mostly distributed in northern part of the country.
 
+From the results of linear regression models, the 4 hypotheses are tested. Hypothesis 1 does not work here as the coefficient of MAT is negative. Similarly, hypothesis 2 is rejected as the coefficient of ART is negative. Therefore, climate may not be a determinant factor of language formation in China. Hypothesis 3 is proved here, although the effect of habitat richness is not as significant as that of topographic roughness. This is parallel with the reality in Yunnan, where mountains and river valleys are arranged in lines. Finally, although the indicator, river length, is admittedly too simple to represent transportation condition, hypothesis 4 is accepted.
 
-
+To conclude, the heterogeneity of topography is the main environmental factor that facilitates the pattern of linguistic diversity in China. Transportation efficiency, in contrast, may lead to uniformity. Climatic variables have little influence on linguistic diversity.
